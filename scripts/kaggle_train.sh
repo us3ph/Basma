@@ -11,9 +11,9 @@ mkdir -p logs
 t0=$(date +%s); stamp(){ echo "[$(( ($(date +%s)-t0)/60 )) min] $*"; }
 stamp "install";    pip install -q -r requirements.txt 2>&1 | tail -1
 stamp "train";      python -m basma.train --config "$CFG"                  2>&1 | tee logs/train.log | grep -E '"event": "(data|plan|eval|saved|max-hours|done)"|Traceback|Error' || true
-stamp "score";      python -m basma.score --model "$OUT/best" --data-dirs $DATA --img-root "$IMG" --out "$OUT/scores" --limit 2500 2>&1 | tee logs/score.log | grep -E "scored|scoring|Traceback" || true
+stamp "score";      python -m basma.score --model "$OUT/best" --data-dirs $DATA --img-root "$IMG" --out "$OUT/scores" --limit 2000 2>&1 | tee logs/score.log | grep -E "scored|scoring|Traceback" || true
 for b in thermostatic ateeqq commfor; do
-  stamp "baseline $b"; python -m basma.baselines --name $b --data-dirs $DATA --img-root "$IMG" --out "$OUT/baselines" --limit 2500 2>&1 | tee "logs/baseline_$b.log" | grep -E "^  |Traceback|Error" || true
+  stamp "baseline $b"; python -m basma.baselines --name $b --data-dirs $DATA --img-root "$IMG" --out "$OUT/baselines" --limit 2000 2>&1 | tee "logs/baseline_$b.log" | grep -E "^  |Traceback|Error" || true
 done
 BL=""; for b in thermostatic ateeqq commfor; do [ -s "$OUT/baselines/$b.jsonl" ] && BL="$BL $b=$OUT/baselines/$b.jsonl"; done
 stamp "fusion";     python -m basma.fusion --scores "$OUT/scores/scores.jsonl" --baseline $BL --out "$OUT/report" 2>&1 | tee logs/fusion.log

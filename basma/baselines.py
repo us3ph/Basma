@@ -50,22 +50,71 @@ class CondDataset(Dataset):
         return self.prep(img), i
 
 
+class ViTS16(torch.nn.Module):
+    """Minimal ViT-S/16 (384 px) with timm parameter names, so the Community Forensics checkpoints load without timm."""
+    def __init__(self, img=384, patch=16, dim=384, depth=12, heads=6, mlp=1536):
+        super().__init__()
+        nn = torch.nn
+        self.patch_embed = nn.Module(); self.patch_embed.proj = nn.Conv2d(3, dim, patch, patch)
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, dim)); self.pos_embed = nn.Parameter(torch.zeros(1, (img // patch) ** 2 + 1, dim))
+        self.blocks = nn.ModuleList()
+        for _ in range(depth):
+            b = nn.Module(); b.norm1 = nn.LayerNorm(dim, eps=1e-6); b.attn = nn.Module(); b.attn.qkv = nn.Linear(dim, 3 * dim); b.attn.proj = nn.Linear(dim, dim)
+            b.norm2 = nn.LayerNorm(dim, eps=1e-6); b.mlp = nn.Module(); b.mlp.fc1 = nn.Linear(dim, mlp); b.mlp.fc2 = nn.Linear(mlp, dim)
+            self.blocks.append(b)
+        self.norm = nn.LayerNorm(dim, eps=1e-6); self.head = nn.Linear(dim, 1); self.heads = heads
+
+    def forward(self, x):
+        B = x.shape[0]
+        x = self.patch_embed.proj(x).flatten(2).transpose(1, 2)
+        x = torch.cat([self.cls_token.expand(B, -1, -1), x], 1) + self.pos_embed
+        for b in self.blocks:
+            h = b.norm1(x); qkv = b.attn.qkv(h).reshape(B, h.shape[1], 3, self.heads, -1).permute(2, 0, 3, 1, 4)
+            a = torch.nn.functional.scaled_dot_product_attention(qkv[0], qkv[1], qkv[2])
+            x = x + b.attn.proj(a.transpose(1, 2).reshape(B, h.shape[1], -1))
+            x = x + b.mlp.fc2(torch.nn.functional.gelu(b.mlp.fc1(b.norm2(x))))
+        return self.head(self.norm(x)[:, 0])
+
+
+def load_vit_s384(repo, device):
+    """Community-Forensics-style checkpoint (timm vit_small_patch16_384 names, 1 logit) from a Hugging Face model repo."""
+    from huggingface_hub import hf_hub_download
+    from safetensors.torch import load_file
+    sd = load_file(hf_hub_download(repo, "model.safetensors"))
+    sd = {k.split(".", 1)[1] if k.startswith(("model.", "net.", "backbone.", "vit.", "module.")) else k: v for k, v in sd.items()}
+    model = ViTS16()
+    missing, unexpected = model.load_state_dict(sd, strict=False)
+    if missing:
+        raise RuntimeError(f"{repo}: checkpoint does not map onto ViT-S/16-384 (missing {missing[:4]}, unexpected {unexpected[:4]})")
+    print(f"{repo}: loaded (unexpected keys ignored: {len(unexpected)} {unexpected[:3]})", flush=True)
+    return model.to(device).eval()
+
+
 class Thermostatic:
+    """Prefers the safetensors weights in timm (GPU); falls back to the fp16 ONNX on CPU."""
     name = "thermostatic"
+    REPO = "Thermostatic/community-forensics-frontier-detector-2026-08"
 
     def __init__(self, device):
-        import onnxruntime as ort
-        from huggingface_hub import hf_hub_download
-        p = hf_hub_download("Thermostatic/community-forensics-frontier-detector-2026-08", "community_forensics_frontier_fp16.onnx")
-        prov = ["CUDAExecutionProvider", "CPUExecutionProvider"] if device.type == "cuda" and "CUDAExecutionProvider" in ort.get_available_providers() else ["CPUExecutionProvider"]
-        self.sess = ort.InferenceSession(p, providers=prov)
-        self.inp = self.sess.get_inputs()[0].name
+        self.device, self.model, self.sess = device, None, None
+        try:
+            self.model = load_vit_s384(self.REPO, device)
+        except Exception as e:  # noqa: BLE001
+            print(f"thermostatic: timm path failed ({type(e).__name__}: {str(e)[:100]}), using ONNX", flush=True)
+            import onnxruntime as ort
+            from huggingface_hub import hf_hub_download
+            p = hf_hub_download(self.REPO, "community_forensics_frontier_fp16.onnx")
+            prov = ["CUDAExecutionProvider", "CPUExecutionProvider"] if device.type == "cuda" and "CUDAExecutionProvider" in ort.get_available_providers() else ["CPUExecutionProvider"]
+            self.sess = ort.InferenceSession(p, providers=prov); self.inp = self.sess.get_inputs()[0].name
 
     def prep(self, img):
         x = np.asarray(short_side_center(img, 440, 384), dtype=np.float32) / 255.0
         return torch.from_numpy(((x - IMNET_MEAN) / IMNET_STD).transpose(2, 0, 1).copy())
 
+    @torch.no_grad()
     def __call__(self, x):
+        if self.model is not None:
+            return self.model(x.to(self.device)).float().reshape(-1).cpu().numpy()
         return self.sess.run(None, {self.inp: x.numpy().astype(np.float32)})[0].reshape(-1)
 
 
@@ -73,17 +122,7 @@ class CommFor:
     name = "commfor"
 
     def __init__(self, device):
-        import timm
-        from huggingface_hub import hf_hub_download
-        from safetensors.torch import load_file
-        sd = load_file(hf_hub_download("OwensLab/commfor-model-384", "model.safetensors"))
-        self.model = timm.create_model("vit_small_patch16_384", pretrained=False, num_classes=1)
-        # the mixin checkpoint wraps the timm model; strip the prefix
-        sd = {k.split(".", 1)[1] if k.startswith(("model.", "net.", "backbone.")) else k: v for k, v in sd.items()}
-        missing, unexpected = self.model.load_state_dict(sd, strict=False)
-        print("commfor load: missing", missing[:5], "unexpected", unexpected[:5], flush=True)
-        assert not [k for k in missing if "head" in k or "blocks" in k], "Community Forensics checkpoint did not map"
-        self.model.to(device).eval(); self.device = device
+        self.model = load_vit_s384("OwensLab/commfor-model-384", device); self.device = device
 
     def prep(self, img):
         x = np.asarray(short_side_center(img, 440, 384), dtype=np.float32) / 255.0

@@ -1,0 +1,1 @@
+{ "name": "basma-web", "private": true, "type": "module", "scripts": { "parity": "node test/parity_views.mjs", "browser": "node test/browser.mjs" }, "devDependencies": { "playwright-core": "^1.51.0" } }
