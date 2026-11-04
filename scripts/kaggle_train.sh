@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # GPU kernel (T4 x2): train (time-capped) -> score held-out pools -> baselines on the same pools -> fusion + report
-#   !bash scripts/kaggle_train.sh configs/kaggle_2xT4_base.json
+#   !bash scripts/kaggle_train.sh configs/kaggle_run.json   (the notebook writes kaggle_run.json with the discovered data dirs)
 set -uo pipefail
 cd "$(dirname "$0")/.."
 CFG="${1:-configs/kaggle_2xT4_base.json}"
@@ -11,6 +11,7 @@ mkdir -p logs
 t0=$(date +%s); stamp(){ echo "[$(( ($(date +%s)-t0)/60 )) min] $*"; }
 stamp "install";    pip install -q -r requirements.txt 2>&1 | tail -1
 stamp "train";      python -m basma.train --config "$CFG"                  2>&1 | tee logs/train.log | grep -E '"event": "(data|plan|eval|saved|max-hours|done)"|Traceback|Error' || true
+if [ ! -d "$OUT/best" ]; then echo "TRAINING FAILED: no $OUT/best. Last lines of logs/train.log:"; tail -40 logs/train.log; exit 1; fi
 stamp "score";      python -m basma.score --model "$OUT/best" --data-dirs $DATA --img-root "$IMG" --out "$OUT/scores" --limit 2000 2>&1 | tee logs/score.log | grep -E "scored|scoring|Traceback" || true
 for b in thermostatic ateeqq commfor; do
   stamp "baseline $b"; python -m basma.baselines --name $b --data-dirs $DATA --img-root "$IMG" --out "$OUT/baselines" --limit 2000 2>&1 | tee "logs/baseline_$b.log" | grep -E "^  |Traceback|Error" || true
