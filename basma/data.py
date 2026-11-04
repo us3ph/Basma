@@ -45,13 +45,12 @@ def extract_all(dirs, img_root, log=print):
     done = set(open(done_f).read().split()) if os.path.exists(done_f) else set()
     n = 0
     for d in dirs:
-        sd = os.path.join(d, "shards")
-        if not os.path.isdir(sd):
-            continue
-        for f in sorted(os.listdir(sd)):
-            if not f.endswith(".tar") or f in done:
+        cands = [os.path.join(sd, f) for sd in (os.path.join(d, "shards"), d) if os.path.isdir(sd) for f in sorted(os.listdir(sd)) if f.endswith(".tar")]
+        for path in cands:                      # shards may sit in <dir>/shards/ or directly in <dir> (Kaggle kernel outputs)
+            f = os.path.basename(path)
+            if f in done:
                 continue
-            with tarfile.open(os.path.join(sd, f)) as t:
+            with tarfile.open(path) as t:
                 t.extractall(img_root, filter="data") if hasattr(tarfile, "data_filter") else t.extractall(img_root)
             done.add(f); n += 1
             with open(done_f, "w") as fh:
