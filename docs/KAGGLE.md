@@ -16,3 +16,13 @@ Data is built on **CPU kernels** (no GPU quota), training + evaluation on **one 
 
 Budgets (`configs/kaggle_2xT4_base.json`): DINOv2-base, batch 48 images x 2 views, 2 epochs over ~250K images,
 capped at 3.3 h; scoring + baselines ~45 min.
+
+## Data-kernel timings (half-size builds, 2026-11-04)
+
+| kernel | images | wall time | note |
+|---|---|---|---|
+| basma-data-cf-half | 62,460 (47,500 AI from 2,382 generators + 14,960 real) | ~50 min | 68 GB of parquet |
+| basma-data-eval-half | 23,019 | 42 min | CF-Eval, GenImage, WildRF, 5 unseen-vendor sets, Flickr2K, Open Images |
+| basma-data-recent-half | 70,710 (46,201 AI + 24,509 real) | 137 min | 65 of those minutes were Flickr30k: 6,000 members read one at a time from a 4.4 GB zip. `ZipSource.read` now fetches members with 8 threads, so a rebuild takes ~15 min for that source. |
+
+Rapidata preference sets repeat images across pairs (152,881 duplicates were dropped in the recent build), which is why some of them yield only a few hundred unique images per generator.

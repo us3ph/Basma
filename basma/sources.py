@@ -7,6 +7,7 @@ import os
 import json
 import random
 import subprocess
+import threading
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
@@ -114,7 +115,7 @@ class ZipSource(Source):
     def _open(self):
         if self.local_path:
             return open(self.local_path, "rb")
-        return hffs().open(f"datasets/{self.repo}/{self.zip_path}", "rb", block_size=4 * 1024 * 1024)
+        return hffs().open(f"datasets/{self.repo}/{self.zip_path}", "rb", block_size=1024 * 1024)   # one request covers a typical member
 
     def units(self, rng, budget):
         with self._open() as fh:
@@ -126,13 +127,20 @@ class ZipSource(Source):
         return [names[i:i + self.chunk] for i in range(0, len(names), self.chunk)]
 
     def read(self, unit):
-        with self._open() as fh:
-            z = zipfile.ZipFile(fh)
-            for n in unit:
-                meta = {"label": self.label, "gen": self.gen, "unit": n.rsplit("/", 1)[0]}
-                if self.member_meta is not None:
-                    meta.update(self.member_meta(n))
-                yield z.read(n), meta
+        # Members are scattered through the archive, so each one is a separate HTTP range request; eight threads read
+        # them in parallel (one ZipFile and connection per thread). The sequential version spent 65 min on 6,000 images.
+        if getattr(self, "_ex", None) is None:            # one pool per source: handles (and the central directory) persist across units
+            self._ex, self._local = ThreadPoolExecutor(8), threading.local()
+        local = self._local
+        def get(n):
+            if getattr(local, "z", None) is None:
+                local.fh = self._open(); local.z = zipfile.ZipFile(local.fh)
+            return n, local.z.read(n)
+        for n, b in self._ex.map(get, unit):
+            meta = {"label": self.label, "gen": self.gen, "unit": n.rsplit("/", 1)[0]}
+            if self.member_meta is not None:
+                meta.update(self.member_meta(n))
+            yield b, meta
 
 
 # ---------------------------------------------------------------- individual files in an HF dataset repo
