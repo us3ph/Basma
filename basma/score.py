@@ -57,7 +57,7 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--data-dirs", nargs="+", required=True)
     ap.add_argument("--img-root", required=True)
-    ap.add_argument("--splits", nargs="+", default=["val", "eval:*"])
+    ap.add_argument("--splits", nargs="+", default=["val", "calib", "eval:*"])
     ap.add_argument("--conds", nargs="+", default=list(EVAL_CONDITIONS))
     ap.add_argument("--out", required=True)
     ap.add_argument("--limit", type=int, default=0, help="max images per split")

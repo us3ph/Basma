@@ -17,8 +17,9 @@ def main(path):
     rep = json.load(open(path))
     b = rep["basma"]; systems = [("Basma", b)] + [(n, r) for n, r in rep["baselines"].items()]
     md = ["# Basma results", "",
-          f"Thresholds for every system are set the same way: the score above which at most 1 % of the validation real images "
-          f"(train sources, all conditions pooled) fall. Basma's threshold is on its calibrated probability ({b['threshold']:.3f}); "
+          f"Thresholds for every system are set the same way: the lowest score at which at most 1 % of the validation real images "
+          f"(train sources) and at most 1 % of the calibration real images (sources never trained on: Pascal VOC 2012, VizWiz), "
+          f"all conditions pooled, are flagged. Basma's threshold is on its calibrated probability ({b['threshold']:.3f}); "
           f"baselines use their own raw scores. TPR = share of AI images above the threshold, FPR = share of real images above it. "
           f"Validation: {b['n_val']} rows, evaluation: {b['n_eval']} rows (image x condition).", ""]
     md += ["## Held-out pools (never trained on)", ""]
@@ -49,6 +50,10 @@ def main(path):
     for sp, d in sorted(b["eval_split_x_cond"].items()):
         rows.append([sp] + [f"{pct(d.get(c, {}).get('tpr'))} / {pct(d.get(c, {}).get('fpr'))}" for c in conds])
     md += [table(["pool", *conds], rows), ""]
+    if "calib_by_source" in b:
+        md += ["## Calibration reals (never trained on; used to set every threshold), FPR % per system", ""]
+        rows = [[src, d["n"]] + [pct(r.get("calib_by_source", {}).get(src, {}).get("fpr")) for _, r in systems] for src, d in b["calib_by_source"].items()]
+        md += [table(["source", "rows", *[n for n, _ in systems]], rows), ""]
     md += ["## Validation (train sources, 8 % held out by hash), Basma", ""]
     rows = [[c, pct(d.get("tpr")), pct(d.get("fpr")), pct(d.get("auroc"))] for c, d in b["val_by_cond"].items()]
     md += [table(["condition", "TPR %", "FPR %", "AUROC %"], rows), ""]

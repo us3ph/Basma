@@ -30,3 +30,11 @@ Rapidata preference sets repeat images across pairs (152,881 duplicates were dro
 ## Where attached notebook outputs are mounted
 
 A kernel listed in `kernel_sources` is mounted at `/kaggle/input/notebooks/<owner>/<kernel-slug>/` (not `/kaggle/input/<kernel-slug>/`), with its output files at the top level (`manifest_cf.jsonl`, `cf_0000.tar`, ...). The training notebook does not rely on the path: it globs `/kaggle/input/**/manifest_*.jsonl` and writes the three directories into `configs/kaggle_run.json`.
+
+## Version 2 (real-photo diversity)
+
+The first model flagged too many real photos from sources it never trained on (LAION web images 44 %, WildRF social-media photos 13 %, Flickr2K 7 %, Open Images 6 %), because Community Forensics Small only contains four real sources (COCO, LandscapesHQ, FFHQ, VISION) and the training reals were narrow. Version 2 adds:
+
+- `basma-data-reals` (CPU): CC3M web images (collected 2018, before image generators), more Pexels stock photography, VISION phone/camera photos, and a **calibration split** of real photos from sources that are never trained on (Pascal VOC 2012, VizWiz).
+- Thresholds for every system: at most 1 % of validation reals **and** at most 1 % of calibration reals flagged (`fusion.thr_rule`).
+- `basma-train-v2` (GPU) mounts the first run's output and reuses its baseline scores (`baselines.py --reuse`): the stored images and per-image attack seeds are identical, so only new rows are scored.

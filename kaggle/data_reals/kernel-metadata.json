@@ -1,0 +1,15 @@
+{
+ "id": "joseph423242/basma-data-reals",
+ "title": "Basma data reals",
+ "code_file": "basma_data_reals.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "dataset_sources": [],
+ "competition_sources": [],
+ "kernel_sources": [],
+ "model_sources": []
+}

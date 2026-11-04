@@ -14,7 +14,8 @@ stamp "train";      python -m basma.train --config "$CFG"                  2>&1 
 if [ ! -d "$OUT/best" ]; then echo "TRAINING FAILED: no $OUT/best. Last lines of logs/train.log:"; tail -40 logs/train.log; exit 1; fi
 stamp "score";      python -m basma.score --model "$OUT/best" --data-dirs $DATA --img-root "$IMG" --out "$OUT/scores" --limit 2000 2>&1 | tee logs/score.log | grep -E "scored|scoring|Traceback" || true
 for b in thermostatic ateeqq commfor; do
-  stamp "baseline $b"; python -m basma.baselines --name $b --data-dirs $DATA --img-root "$IMG" --out "$OUT/baselines" --limit 2000 2>&1 | tee "logs/baseline_$b.log" | grep -E "^  |Traceback|Error" || true
+  REUSE=""; [ -n "${BASELINE_CACHE:-}" ] && [ -s "$BASELINE_CACHE/$b.jsonl" ] && REUSE="--reuse $BASELINE_CACHE/$b.jsonl"
+  stamp "baseline $b"; python -m basma.baselines --name $b --data-dirs $DATA --img-root "$IMG" --out "$OUT/baselines" --limit 2000 $REUSE 2>&1 | tee "logs/baseline_$b.log" | grep -E "^  |Traceback|Error" || true
 done
 BL=""; for b in thermostatic ateeqq commfor; do [ -s "$OUT/baselines/$b.jsonl" ] && BL="$BL $b=$OUT/baselines/$b.jsonl"; done
 stamp "fusion";     python -m basma.fusion --scores "$OUT/scores/scores.jsonl" --baseline $BL --out "$OUT/report" 2>&1 | tee logs/fusion.log

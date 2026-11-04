@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 
 from .metrics import auroc, threshold_at_fpr
 
-FPR_AI = 0.01       # "AI" verdict: at most 1 % of validation reals (all conditions pooled) above the threshold
+FPR_AI = 0.01       # "AI" verdict: at most 1 % of validation reals and 1 % of calibration reals (all conditions pooled) above the threshold
 FNR_REAL = 0.02     # "Real" verdict: at most 2 % of validation AI images below the lower threshold
 
 
@@ -65,6 +65,17 @@ def fit(val_rows):
     return f
 
 
+def thr_rule(rows, score_of):
+    """AI threshold, the same rule for every system: at most FPR_AI of the validation reals (train sources) AND at most
+    FPR_AI of the calibration reals (sources never trained on) score at or above it."""
+    ts = []
+    for sp in ("val", "calib"):
+        neg = [score_of(r) for r in rows if r["split"] == sp and r["label"] == 0]
+        if neg:
+            ts.append(threshold_at_fpr(neg, FPR_AI))
+    return max(ts)
+
+
 def summarize(rows, score_of, thr, group_keys):
     """rows -> {group: {n, auroc, tpr or fpr at thr}} for each grouping; AI rows report TPR, real rows FPR."""
     out = {}
@@ -88,12 +99,15 @@ def summarize(rows, score_of, thr, group_keys):
 
 
 def report_system(name, rows, score_of, thr_fn):
-    """thr_fn(val_rows) -> threshold at FPR_AI on validation reals. Same protocol for Basma and each baseline."""
+    """thr_fn(rows) -> AI threshold (thr_rule). Same protocol for Basma and each baseline."""
     val = [r for r in rows if r["split"] == "val"]
-    thr = thr_fn(val)
+    cal = [r for r in rows if r["split"] == "calib"]
+    thr = thr_fn(rows)
     ev = [r for r in rows if r["split"].startswith("eval:")]
-    rep = {"system": name, "threshold": thr, "n_val": len(val), "n_eval": len(ev)}
+    rep = {"system": name, "threshold": thr, "n_val": len(val), "n_calib": len(cal), "n_eval": len(ev)}
     rep["val_by_cond"] = summarize(val, score_of, thr, ["cond"])["cond"]
+    if cal:
+        rep["calib_by_source"] = summarize(cal, score_of, thr, ["source"])["source"]
     rep["eval_by_split"] = summarize(ev, score_of, thr, ["split"])["split"]
     rep["eval_by_cond"] = summarize(ev, score_of, thr, ["cond"])["cond"]
     rep["eval_by_family"] = summarize([r for r in ev if r["label"] == 1], score_of, thr, ["family"])["family"]
@@ -117,8 +131,10 @@ def main():
     rows = load_rows(a.scores)
     val = [r for r in rows if r["split"] == "val"]
     f = fit(val)
+    f.thr_ai = thr_rule(rows, f.prob)
+    f.thr_real = min(f.thr_real, f.thr_ai)
     json.dump(f.to_json(), open(os.path.join(a.out, "fusion.json"), "w"), indent=1)
-    report = {"basma": report_system("basma", rows, f.prob, lambda v: f.thr_ai), "verdict_thresholds": {"thr_ai": f.thr_ai, "thr_real": f.thr_real},
+    report = {"basma": report_system("basma", rows, f.prob, lambda rs: f.thr_ai), "verdict_thresholds": {"thr_ai": f.thr_ai, "thr_real": f.thr_real},
               "fusion": f.to_json(), "baselines": {}}
     # verdict distribution on eval pools
     ev = [r for r in rows if r["split"].startswith("eval:")]
@@ -127,7 +143,7 @@ def main():
     for spec in a.baseline:
         name, path = spec.split("=", 1)
         brows = load_rows(path)
-        report["baselines"][name] = report_system(name, brows, lambda r: r["score"], lambda v: threshold_at_fpr([r["score"] for r in v if r["label"] == 0], FPR_AI))
+        report["baselines"][name] = report_system(name, brows, lambda r: r["score"], lambda rs: thr_rule(rs, lambda r: r["score"]))
     json.dump(report, open(os.path.join(a.out, "report.json"), "w"), indent=1)
     print(json.dumps({"basma_eval": report["basma"]["eval_overall"], "by_split": {k: {kk: v[kk] for kk in ("tpr", "fpr", "auroc") if kk in v} for k, v in report["basma"]["eval_by_split"].items()},
                       "baselines": {n: b["eval_overall"] for n, b in report["baselines"].items()}}, indent=1))

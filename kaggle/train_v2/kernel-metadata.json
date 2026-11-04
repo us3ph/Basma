@@ -1,0 +1,21 @@
+{
+ "id": "joseph423242/basma-train-v2",
+ "title": "Basma train v2",
+ "code_file": "basma_train_v2.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "dataset_sources": [],
+ "competition_sources": [],
+ "kernel_sources": [
+  "joseph423242/basma-data-cf-half",
+  "joseph423242/basma-data-recent-half",
+  "joseph423242/basma-data-reals",
+  "joseph423242/basma-data-eval-half",
+  "joseph423242/basma-train-2xt4"
+ ],
+ "model_sources": []
+}

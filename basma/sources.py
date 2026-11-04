@@ -7,6 +7,7 @@ import os
 import json
 import random
 import subprocess
+import tarfile
 import threading
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -170,6 +171,32 @@ class HfFilesSource(Source):
                 yield b, {"label": self.label, "gen": self.gen, "unit": f.rsplit("/", 1)[0]}
 
 
+# ---------------------------------------------------------------- webdataset tar shards in an HF dataset repo
+class TarSource(Source):
+    """Stream each shard from its start and keep its first per_shard images, so only those bytes are downloaded."""
+    EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+    def __init__(self, name, repo, label, gen, split="train", prefix="", per_shard=400, family_override=None):
+        self.name, self.repo, self.label, self.gen, self.split = name, repo, label, gen, split
+        self.prefix, self.per_shard, self.family_override = prefix, per_shard, family_override
+
+    def units(self, rng, budget):
+        files = list_files(self.repo, ".tar", prefix=self.prefix)
+        rng.shuffle(files)
+        return files[:budget.get("max_files", len(files))]
+
+    def read(self, unit):
+        n = 0
+        with hffs().open(f"datasets/{self.repo}/{unit}", "rb", block_size=8 * 1024 * 1024) as fh, tarfile.open(fileobj=fh, mode="r|") as tf:
+            for m in tf:
+                if not (m.isfile() and m.name.lower().endswith(self.EXTS)):
+                    continue
+                yield tf.extractfile(m).read(), {"label": self.label, "gen": self.gen, "unit": unit}
+                n += 1
+                if n >= self.per_shard:
+                    break
+
+
 # ---------------------------------------------------------------- datasets save_to_disk arrow shards (GenImage mirror)
 class ArrowSource(Source):
     def __init__(self, name, repo, dirs, split="eval:genimage", files_per_dir=1, family_override=None):
@@ -231,7 +258,10 @@ class GDriveZipSource(ZipSource):
 def cf_row_meta(row, col):
     """Community Forensics rows: label 0/1, model_name for AI, real_source for real."""
     lab = int(row.get("label", 0))
-    gen = row.get("model_name") if lab == 1 else f"real:{row.get('real_source') or 'unknown'}"
+    src = row.get("real_source")
+    if not src or src == "N/A":                      # CF-Small leaves real_source empty and names the real source in model_name
+        src = row.get("model_name") or "unknown"
+    gen = row.get("model_name") if lab == 1 else f"real:{src}"
     return {"label": lab, "gen": gen, "extra": {"arch": row.get("architecture"), "fmt": row.get("format"), "subset": row.get("subset")}}
 
 

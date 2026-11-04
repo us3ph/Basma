@@ -94,7 +94,7 @@ class ShardWriter:
 
 
 def assign_split(src, label, family, sha):
-    if src.split.startswith("eval:"):
+    if src.split.startswith("eval:") or src.split == "calib":   # calib: real photos never trained on, used only to set thresholds
         return src.split
     if label == 1 and is_holdout(family):
         return "eval:unseen_vendors"
@@ -250,6 +250,24 @@ def plan_recent(scale=1.0):
     return plan
 
 
+def plan_reals(scale=1.0):
+    """Real photos the first model lacked, which is where its false positives came from (LAION-style web images 44 %,
+    social-media photos 13 %, high-end photography 7 %): CC3M web images (collected 2018, before image generators),
+    more Pexels stock photography, VISION phone/camera photos. Plus a calibration split of real photos from sources
+    that are never trained on (Pascal VOC 2012, VizWiz phone photos): thresholds must hold on them too."""
+    k = lambda n: max(1, int(n * scale))
+    sh = json.load(open(os.path.join(os.path.dirname(__file__), "cf_small_shards.json")))
+    cf_vision = S.ParquetSource("cf_vision", "OwensLab/CommunityForensics-Small", [("image_data", None, None)], files=sh["real_by_source"]["VISION"],
+                                meta_cols=("model_name", "real_source", "label", "architecture", "format"), row_meta=S.cf_row_meta, family_override="real:cf_vision")
+    return [
+        (S.TarSource("cc3m", "pixparse/cc3m-wds", 0, "cc3m", prefix="cc3m-train-", per_shard=400), {"max_files": k(40), "max_images": k(15_000)}),
+        (S.ParquetSource("pexels_more", "ujin-song/pexels-image-60k", [("image", 0, "pexels")], family_override="real:pexels"), {"max_files": k(24), "max_images": k(8000)}),
+        (cf_vision, {"max_images": k(6000)}),
+        (S.ParquetSource("voc2012", "nateraw/pascal-voc-2012", [("image", 0, "voc2012")], split="calib"), {"max_images": k(2900)}),
+        (S.ParquetSource("vizwiz", "Multimodal-Fatima/VizWiz_train", [("image", 0, "vizwiz")], split="calib"), {"max_files": k(3), "max_images": k(2000)}),
+    ]
+
+
 def plan_eval(scale=1.0, tmp="/tmp/basma_dl"):
     """Held-out pools: CF-Eval (21 unseen generators + RAISE/COCO/FFHQ reals), GenImage test, WildRF, unseen-vendor
     Rapidata sets, unseen real sources (Flickr2K, Open Images)."""
@@ -299,7 +317,7 @@ def plan_mini():
     ]
 
 
-PLANS = {"cf": plan_cf, "recent": plan_recent, "eval": plan_eval, "mini": lambda scale=1.0: plan_mini()}
+PLANS = {"cf": plan_cf, "recent": plan_recent, "reals": plan_reals, "eval": plan_eval, "mini": lambda scale=1.0: plan_mini()}
 
 
 def main():

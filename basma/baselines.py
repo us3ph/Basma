@@ -160,27 +160,44 @@ def main():
     ap.add_argument("--name", required=True, choices=list(BASELINES))
     ap.add_argument("--data-dirs", nargs="+", required=True)
     ap.add_argument("--img-root", required=True)
-    ap.add_argument("--splits", nargs="+", default=["val", "eval:*"])
+    ap.add_argument("--splits", nargs="+", default=["val", "calib", "eval:*"])
     ap.add_argument("--conds", nargs="+", default=list(EVAL_CONDITIONS))
     ap.add_argument("--out", required=True)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--reuse", default=None, help="earlier scores of this baseline (same shards): rows with the same id and condition are copied, "
+                                                   "since the stored image and the per-image attack seed are identical")
     a = ap.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     rows = select_rows(load_manifests(a.data_dirs), a.splits, a.limit); extract_all(a.data_dirs, a.img_root)
-    bl = BASELINES[a.name](device)
+    cache = {}
+    if a.reuse and os.path.exists(a.reuse):
+        with open(a.reuse, encoding="utf-8") as fh:
+            for line in fh:
+                if line.strip():
+                    c = json.loads(line); cache[(c["id"], c["cond"])] = c["score"]
+        print(f"  reusing {len(cache)} earlier {a.name} scores from {a.reuse}", flush=True)
+    bl = None
     os.makedirs(a.out, exist_ok=True); t0 = time.time()
+
+    def emit(fh, r, cond, score):
+        fh.write(json.dumps({"id": r["id"], "label": r["label"], "source": r["source"], "gen": r["gen"], "family": r["family"], "vendor": r["vendor"],
+                             "split": r["split"], "cond": cond, "score": float(score)}) + "\n")
     with open(os.path.join(a.out, f"{a.name}.jsonl"), "w", encoding="utf-8") as fh:
         for cond in a.conds:
-            dl = DataLoader(CondDataset(rows, a.img_root, cond, bl.prep), batch_size=a.batch_size, num_workers=a.workers)
-            for x, idx in dl:
-                s = bl(x)
-                for b in range(len(idx)):
-                    r = rows[int(idx[b])]
-                    fh.write(json.dumps({"id": r["id"], "label": r["label"], "source": r["source"], "gen": r["gen"], "family": r["family"], "vendor": r["vendor"],
-                                         "split": r["split"], "cond": cond, "score": float(s[b])}) + "\n")
-            print(f"  {a.name} {cond}: {len(rows)} images ({(time.time() - t0) / 60:.1f} min)", flush=True)
+            todo = [r for r in rows if (r["id"], cond) not in cache]
+            for r in rows:
+                if (r["id"], cond) in cache:
+                    emit(fh, r, cond, cache[(r["id"], cond)])
+            if todo:
+                bl = bl or BASELINES[a.name](device)
+                dl = DataLoader(CondDataset(todo, a.img_root, cond, bl.prep), batch_size=a.batch_size, num_workers=a.workers)
+                for x, idx in dl:
+                    s = bl(x)
+                    for b in range(len(idx)):
+                        emit(fh, todo[int(idx[b])], cond, s[b])
+            print(f"  {a.name} {cond}: {len(rows)} images, {len(todo)} newly scored ({(time.time() - t0) / 60:.1f} min)", flush=True)
 
 
 if __name__ == "__main__":
