@@ -26,3 +26,7 @@ capped at 3.3 h; scoring + baselines ~45 min.
 | basma-data-recent-half | 70,710 (46,201 AI + 24,509 real) | 137 min | 65 of those minutes were Flickr30k: 6,000 members read one at a time from a 4.4 GB zip. `ZipSource.read` now fetches members with 8 threads, so a rebuild takes ~15 min for that source. |
 
 Rapidata preference sets repeat images across pairs (152,881 duplicates were dropped in the recent build), which is why some of them yield only a few hundred unique images per generator.
+
+## Where attached notebook outputs are mounted
+
+A kernel listed in `kernel_sources` is mounted at `/kaggle/input/notebooks/<owner>/<kernel-slug>/` (not `/kaggle/input/<kernel-slug>/`), with its output files at the top level (`manifest_cf.jsonl`, `cf_0000.tar`, ...). The training notebook does not rely on the path: it globs `/kaggle/input/**/manifest_*.jsonl` and writes the three directories into `configs/kaggle_run.json`.

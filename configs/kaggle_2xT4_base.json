@@ -20,9 +20,9 @@
     "screenshot"
   ],
   "data_dirs": [
-    "/kaggle/input/basma-data-cf-half",
-    "/kaggle/input/basma-data-recent-half",
-    "/kaggle/input/basma-data-eval-half"
+    "/kaggle/input/notebooks/joseph423242/basma-data-cf-half",
+    "/kaggle/input/notebooks/joseph423242/basma-data-recent-half",
+    "/kaggle/input/notebooks/joseph423242/basma-data-eval-half"
   ],
   "img_root": "/tmp/basma_img",
   "out": "runs/kaggle_base"
