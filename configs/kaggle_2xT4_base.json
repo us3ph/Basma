@@ -4,8 +4,8 @@
   "batch_size": 48,
   "n_crops": 1,
   "epochs": 2,
-  "lr_backbone": 3e-5,
-  "lr_head": 5e-4,
+  "lr_backbone": 3e-05,
+  "lr_head": 0.0005,
   "layer_decay": 0.85,
   "weight_decay": 0.05,
   "warmup_steps": 300,
@@ -14,8 +14,16 @@
   "fp16": true,
   "workers": 4,
   "val_limit": 1500,
-  "eval_conditions": ["clean", "social", "screenshot"],
-  "data_dirs": ["/kaggle/input/basma-data-cf", "/kaggle/input/basma-data-recent", "/kaggle/input/basma-data-eval"],
+  "eval_conditions": [
+    "clean",
+    "social",
+    "screenshot"
+  ],
+  "data_dirs": [
+    "/kaggle/input/basma-data-cf-half",
+    "/kaggle/input/basma-data-recent-half",
+    "/kaggle/input/basma-data-eval-half"
+  ],
   "img_root": "/tmp/basma_img",
   "out": "runs/kaggle_base"
 }
