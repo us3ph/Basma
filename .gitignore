@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+data/
+runs/
+logs/
+models/
+web/assets/onnx/
+*.tgz
+*.zip
+.DS_Store

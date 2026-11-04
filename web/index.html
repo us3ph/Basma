@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>if (location.pathname.endsWith("/index.html")) history.replaceState(null, "", location.pathname.slice(0, -10) + location.search + location.hash);</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Basma</title>
+<meta name="description" content="AI-image detector that runs entirely in your browser and survives posting, resizing, colour edits and screenshots.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #000; --fg: #f2f2f5; --ai: #ff6b6b; --human: #5ee39a; --mixed: #ffc857; --c1: #0700ff; --c2: #1cdaff; --c3: #1cdaff; --bg: #000; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); font-family: Inter, system-ui, sans-serif; }
+  body { background: #000; overflow-x: hidden; }
+  main { position: relative; z-index: 1; min-height: 100vh; padding: 0 16px 24px 16px; }
+  #topbar { display: flex; justify-content: space-between; align-items: center; padding: 26px 24px 0 24px; max-width: 1200px; margin: 0 auto; }
+  #brand { font-weight: 700; font-size: 1.15em; display: flex; align-items: center; gap: 8px; }
+  #brand .beta { font-size: .62em; font-weight: 600; padding: 2px 8px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; opacity: .85; }
+  a.pill { position: relative; display: inline-flex; align-items: center; gap: 8px; overflow: hidden; color: #f2f6ff; text-decoration: none;
+    font-weight: 600; font-size: .92em; padding: 9px 16px; border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.03) 100%);
+    border: 1px solid rgba(255,255,255,.16); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(255,255,255,.04), 0 6px 22px rgba(0,0,0,.5);
+    transition: border-color .25s ease, background .25s ease; }
+  a.pill::before { content: ""; position: absolute; left: 6%; right: 6%; top: 1px; height: 48%; border-radius: 999px; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.30), rgba(255,255,255,0)); }           /* glass reflection */
+  a.pill:hover { border-color: rgba(28,218,255,.4); background: linear-gradient(180deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,.05) 100%); }
+  a.pill svg { width: 16px; height: 16px; fill: currentColor; position: relative; }
+  a.pill span { position: relative; }
+
+  /* ---- Shatter headline: "Basma" cut into glass shards ---- */
+  #hero { display: flex; justify-content: center; margin: 9vh auto 0 auto; }
+  #shatter { position: relative; cursor: default; user-select: none; pointer-events: none; font-size: clamp(4.4em, 13vw, 8.8em); font-weight: 800; letter-spacing: -.045em; line-height: 1; }
+  #shatter .measure { visibility: hidden; white-space: nowrap; display: inline-block; padding: .08em .06em; }
+  #shatter .shard { position: absolute; left: 0; top: 0; white-space: nowrap; padding: .08em .06em; will-change: transform;
+    color: transparent; background: linear-gradient(var(--ga, 180deg), #ffffff 0%, #e4ebff 50%, #a9bdff 100%); -webkit-background-clip: text; background-clip: text;
+    transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .9s ease, filter .25s ease; }
+  #shatter.flying .shard { transition: transform .7s cubic-bezier(.3,.6,.2,1), opacity .7s ease; }
+  #sub { text-align: center; opacity: .75; margin: 14px 0 0 0; font-size: 1.05em; }
+
+  /* ---- Frame border: WebGL shader (web/frame-border.js) ---- */
+  .frame { position: relative; width: min(760px, 100%); margin: 46px auto 0 auto; border-radius: 16px; background: transparent; }
+  #card { position: relative; z-index: 2; border-radius: 16px; padding: 20px 22px 14px 22px; background: transparent; }
+  #drop { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 158px; height: 158px;
+    border-radius: 12px; cursor: pointer; transition: background .25s ease; }
+  #drop.over { background: rgba(28,218,255,.06); }
+  #drop.has { height: 300px; }
+  #preview { display: none; max-width: 100%; max-height: 100%; border-radius: 10px; object-fit: contain; pointer-events: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+  #drop.has #preview { display: block; }
+  /* centred placeholder: appears once the frame has drawn itself, hides once an image is in */
+  #ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 1;
+    color: rgba(255,255,255,.5); font-size: 1.1em; opacity: 0; transform: translateY(4px); transition: opacity .45s ease, transform .45s ease; }
+  #ph.show { opacity: 1; transform: none; }
+  #toolbar { position: absolute; right: 16px; bottom: 14px; z-index: 3; display: flex; }
+  #send { position: relative; width: 44px; height: 44px; border-radius: 50%; border: none; padding: 0; background: transparent; color: #fff; cursor: pointer; overflow: visible; }
+  #send:disabled { cursor: wait; }
+  #send { opacity: 0; visibility: hidden; transition: opacity .5s ease; }
+  #send.in { opacity: 1; visibility: visible; }
+  #send .arrow { position: relative; z-index: 1; font-size: 1.15em; font-weight: 700; line-height: 1; text-shadow: 0 0 6px rgba(0,0,30,.85); }
+
+  /* ---- Staggered status text ---- */
+  #bar { width: calc(min(760px, 100%) - 32px); height: 1px; margin: 14px auto 0 auto; background: transparent; transition: opacity .9s ease; }
+  #bar > div { height: 100%; width: 0%; border-radius: 1px; background: linear-gradient(90deg, #0700ff, #1cdaff);
+    box-shadow: 0 0 6px rgba(28,218,255,.75), 0 0 14px rgba(7,0,255,.45); transition: width .25s ease; }
+  #bar.done { opacity: 0; }
+  #under { position: relative; width: min(760px, 100%); margin: 14px auto 0 auto; text-align: center; }
+  #status { text-align: center; opacity: .85; font-size: .95em; min-height: 1.3em; }
+  #status.off { display: none; }
+  /* image size of the last result: under the frame, far right */
+  #count { position: absolute; right: 6px; top: 0; font-size: .95em; opacity: .7; }
+  #status .spin { display: inline-block; width: 13px; height: 13px; margin-right: 9px; vertical-align: -2px; border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(28,218,255,0) 0deg, #0700ff 140deg, #1cdaff 340deg, rgba(28,218,255,0) 360deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+    animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .stagger span { display: inline-block; opacity: 0; transform: translateY(8px); animation: rise .55s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { border-radius: 999px; background: linear-gradient(180deg, #0700ff, #1cdaff); }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  @supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: rgba(28,218,255,.6) transparent; } }
+  /* the page itself never shows a scrollbar (it can still scroll with the wheel on very small windows) */
+  html, body { scrollbar-width: none; -ms-overflow-style: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  #verdict { text-align: center; margin: 0 auto; }
+  #verdict .v { font-size: 2.4em; font-weight: 600; letter-spacing: -.5px; line-height: 1.05; }
+  #verdict .s { opacity: .8; font-size: 1.05em; margin-top: 4px; }
+  @media (max-height: 820px) { #hero { margin-top: 4vh; } #shatter { font-size: clamp(3.6em, 10.5vw, 7.2em); } .frame { margin-top: 32px; }
+    #under { margin-top: 10px; } }
+  @media (max-height: 640px) { #topbar { padding-top: 14px; } #hero { margin-top: 1vh; } #shatter { font-size: clamp(3em, 8.5vw, 5.6em); }
+    .frame { margin-top: 22px; } #drop { min-height: 130px; height: 130px; } }
+  @media (max-width: 600px) { #topbar { padding: 18px 8px 0 8px; } #hero { margin-top: 6vh; } }
+  @media (prefers-reduced-motion: reduce) { .stagger span { animation-duration: .01s; } #shatter .shard { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div id="topbar"><div id="brand">Basma <span class="beta">BETA</span></div><a class="pill" href="https://github.com/us3ph/Basma" target="_blank" rel="noopener" aria-label="Basma on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
+  <div id="hero"><div id="shatter" role="heading" aria-level="1" aria-label="Basma"></div></div>
+  <div class="frame">
+    <div id="card">
+      <div id="drop" role="button" tabindex="0" aria-label="Choose an image to check">
+        <img id="preview" alt="" draggable="false">
+        <input id="file" type="file" accept="image/*" hidden>
+      </div>
+      <div id="ph" aria-hidden="true">Drop an image, paste it, or click to choose…</div>
+      <div id="toolbar"><button id="send" title="Detect" aria-label="Detect" disabled><span class="arrow">↑</span></button></div>
+    </div>
+  </div>
+  <div id="bar"><div id="barfill"></div></div>
+  <div id="under">
+    <div id="status"></div>
+    <div id="verdict"></div>
+    <div id="count"></div>
+  </div>
+</main>
+<script>
+// ---- Staggered text: letters rise in one after another
+window.staggerText = (el, text, perChar = 18) => {
+  el.textContent = ""; el.classList.add("stagger");
+  [...text].forEach((ch, i) => { const s = document.createElement("span"); s.textContent = ch === " " ? " " : ch; s.style.setProperty("--d", `${i * perChar}ms`); el.appendChild(s); });
+};
+
+// ---- Shatter type: the headline is cut into glass shards that assemble, crack under the cursor and shatter on click
+(() => {
+  const el = document.getElementById("shatter"); const TEXT = "Basma";
+  let shards = [], W = 0, H = 0, flying = false;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function build() {
+    el.innerHTML = ""; shards = [];
+    const m = document.createElement("span"); m.className = "measure"; m.textContent = TEXT; el.appendChild(m);
+    const r = m.getBoundingClientRect(); W = r.width; H = r.height; el.style.width = `${W}px`; el.style.height = `${H}px`;
+    const cols = 7, rows = 4, pts = [];
+    for (let j = 0; j <= rows; j++) { pts.push([]); for (let i = 0; i <= cols; i++) {
+      const edgeX = i === 0 || i === cols, edgeY = j === 0 || j === rows;
+      pts[j].push([i / cols * W + (edgeX ? 0 : rnd(-.3, .3) * W / cols), j / rows * H + (edgeY ? 0 : rnd(-.3, .3) * H / rows)]);
+    } }
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const a = pts[j][i], b = pts[j][i + 1], c = pts[j + 1][i], d = pts[j + 1][i + 1];
+      const tris = Math.random() < .5 ? [[a, b, d], [a, d, c]] : [[a, b, c], [b, d, c]];
+      for (const t of tris) {
+        const s = document.createElement("span"); s.className = "shard"; s.textContent = TEXT;
+        s.style.clipPath = `polygon(${t.map(p => `${p[0].toFixed(1)}px ${p[1].toFixed(1)}px`).join(",")})`;
+        s.style.setProperty("--ga", `${rnd(90, 180).toFixed(0)}deg`);
+        s.style.filter = `brightness(${rnd(.88, 1.08).toFixed(2)})`;
+        const cx = (t[0][0] + t[1][0] + t[2][0]) / 3, cy = (t[0][1] + t[1][1] + t[2][1]) / 3;
+        s.dataset.cx = cx; s.dataset.cy = cy; s.dataset.br = s.style.filter;
+        s.style.transform = `translate(${rnd(-220, 220)}px, ${rnd(-160, 160)}px) rotate(${rnd(-50, 50)}deg) scale(1.15)`; s.style.opacity = "0";
+        s.style.transitionDelay = `${rnd(0, 500).toFixed(0)}ms`;
+        el.appendChild(s); shards.push(s);
+      }
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => shards.forEach(s => { s.style.transform = "none"; s.style.opacity = "1"; })));
+    setTimeout(() => shards.forEach(s => { s.style.transitionDelay = "0ms"; }), 1600);
+  }
+  function crack(e) {
+    if (flying) return;
+    const r = el.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top;
+    for (const s of shards) {
+      const dx = s.dataset.cx - x, dy = s.dataset.cy - y, d = Math.hypot(dx, dy), R = 110;
+      if (d < R) { const k = (R - d) / R; s.style.transform = `translate(${(dx / (d || 1)) * 7 * k}px, ${(dy / (d || 1)) * 7 * k}px) rotate(${(dx > 0 ? 1 : -1) * 1.5 * k}deg)`; s.style.filter = `brightness(${1 + .45 * k})`; }
+      else { s.style.transform = "none"; s.style.filter = s.dataset.br; }
+    }
+  }
+  function shatter() {
+    if (flying) return; flying = true; el.classList.add("flying");
+    for (const s of shards) { const ang = Math.atan2(s.dataset.cy - H / 2, s.dataset.cx - W / 2) + rnd(-.5, .5); const dist = rnd(140, 420);
+      s.style.transform = `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist + 60}px) rotate(${rnd(-200, 200)}deg) scale(${rnd(.6, 1.1)})`; s.style.opacity = "0"; }
+    setTimeout(() => { el.classList.remove("flying"); for (const s of shards) { s.style.transitionDelay = `${rnd(0, 350).toFixed(0)}ms`; s.style.transform = "none"; s.style.opacity = "1"; s.style.filter = s.dataset.br; }
+      setTimeout(() => { shards.forEach(s => { s.style.transitionDelay = "0ms"; }); flying = false; }, 1400); }, 900);
+  }
+  void crack; void shatter;                      // headline is not interactive: it only assembles on load
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(build, 200); });
+  document.fonts?.ready.then(build) || build();
+})();
+</script>
+<script type="module">
+  import { frameBorder } from "./frame-border.js";
+  import { aiBlob } from "./ai-blob.js";
+  window.basmaBlob = aiBlob(document.getElementById("send"), { size: 44, colors: ["#0700ff", "#3a86ff", "#1cdaff"], state: "thinking", halo: 0.7 });
+  const sendBtn = document.getElementById("send");
+  sendBtn.addEventListener("pointerenter", () => { if (!sendBtn.disabled) window.basmaBlob.setState("listening"); });
+  sendBtn.addEventListener("pointerleave", () => { if (!sendBtn.disabled) window.basmaBlob.setState("idle"); });
+  frameBorder(document.querySelector(".frame"), { colors: ["#0700ff", "#1cdaff"], glow: 0.3, interactive: false });
+  (() => {                                    // placeholder only after the border intro; button revealed after it
+    const ph = document.getElementById("ph"), drop = document.getElementById("drop");
+    setTimeout(() => { if (!drop.classList.contains("has")) ph.classList.add("show"); }, 1300);
+    setTimeout(() => { sendBtn.classList.add("in"); window.basmaBlob?.replay(); }, 1200);
+    drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); document.getElementById("file").click(); } });
+  })();
+</script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

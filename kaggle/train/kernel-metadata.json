@@ -1,0 +1,19 @@
+{
+ "id": "joseph423242/basma-train-2xt4",
+ "title": "Basma train (2xT4)",
+ "code_file": "basma_train.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "dataset_sources": [],
+ "competition_sources": [],
+ "kernel_sources": [
+  "joseph423242/basma-data-cf",
+  "joseph423242/basma-data-recent",
+  "joseph423242/basma-data-eval"
+ ],
+ "model_sources": []
+}
