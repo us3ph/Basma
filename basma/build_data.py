@@ -173,16 +173,17 @@ def build(plan_name, plan, out_dir, workers=4, seed=0, log=print, chunk=64):
                             family = src.family_override
                     else:
                         gen, family, vendor = str(meta["gen"] or f"real:{src.name}"), (src.family_override or f"real:{src.name}"), "real"
-                    if n_gen[gen] >= cap_gen or n_label[label] >= cap_label.get(label, 10 ** 9):
+                    gkey = f"{label}:{gen}"                                   # caps are per (label, generator)
+                    if n_gen[gkey] >= cap_gen or n_label[label] >= cap_label.get(label, 10 ** 9):
                         stats["capped"] += 1; continue
-                    seen.add(sha); n_gen[gen] += 1; n_label[label] += 1
+                    seen.add(sha); n_gen[gkey] += 1; n_label[label] += 1
                     todo.append((sha, raw, dict(meta, gen=gen, family=family, vendor=vendor, label=label)))
                     if n_src + len(todo) >= max_images:
                         stop.set(); break
                 for i, jpg, m in pool.imap(_work, [(i, raw) for i, (_, raw, _) in enumerate(todo)], chunksize=4):
                     sha, _, meta = todo[i]
                     if jpg is None:
-                        errors[m["error"][:40]] += 1; n_gen[meta["gen"]] -= 1; n_label[meta["label"]] -= 1; continue
+                        errors[m["error"][:40]] += 1; n_gen[f"{meta['label']}:{meta['gen']}"] -= 1; n_label[meta["label"]] -= 1; continue
                     row = {"id": sha[:16], "label": meta["label"], "source": src.name, "gen": meta["gen"], "family": meta["family"], "vendor": meta["vendor"],
                            "split": assign_split(src, meta["label"], meta["family"], sha), "plan": plan_name, "unit": meta.get("unit", ""), "extra": meta.get("extra", {})}
                     row.update(m)
@@ -234,7 +235,7 @@ def plan_recent(scale=1.0):
         rapidata("rd_faces", "Rapidata/Face_Generation_Benchmark", max_files=k(4), cap_per_gen=4000),
         rapidata("rd_fluxsd3mj", "Rapidata/700k_Human_Preference_Dataset_FLUX_SD3_MJ_DALLE3", max_files=k(10), cap_per_gen=4000),
         rapidata("rd_flux11", "Rapidata/117k_human_preferences_flux1.0_V_flux1.1Blueberry", max_files=k(4), cap_per_gen=2500),
-        rapidata("rd_bench2026", "Rapidata/text-to-image-human-feedback-benchmark", max_files=k(70), cap_per_gen=3000),
+        rapidata("rd_bench2026", "Rapidata/text-to-image-human-feedback-benchmark", max_files=k(140), cap_per_gen=3000),   # ~85 unique images per shard
         (S.HfFilesSource("gpt_image_2", "Goku-OpenLab/gpt-image-2-prompts-datasets", 1, "gpt-image-2", prefix="gpt-image-2/images/0/"), {"max_images": k(7000)}),
         (S.ZipSource("gpt_imgeval", 1, gen="gpt-4o-image", repo="Yejy53/GPT-ImgEval", zip_path="GenEval.zip"), {"max_images": k(1500)}),
         (coco_ai, {"max_files": k(13), "rgs_per_file": 8, "cap_per_gen": 6000, "max_images": k(40_000)}),

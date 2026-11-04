@@ -192,7 +192,8 @@ class ArrowSource(Source):
                     b = _bytes(cols["image"][i])
                     if not b:
                         continue
-                    yield b, {"label": 1 if str(lab).lower() in ("fake", "1", "ai") else 0, "gen": f"genimage:{gen}", "unit": f}
+                    fake = str(lab).lower() in ("fake", "1", "ai")
+                    yield b, {"label": 1 if fake else 0, "gen": f"genimage:{gen}" if fake else f"genimage-real:{gen}", "unit": f}
         try:
             os.remove(p)
         except OSError:
