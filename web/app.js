@@ -6,9 +6,11 @@ import { inferenceViews } from "./views.js";
 import { createFusion } from "./fusion.js";
 
 const MODEL_REPO = "x-hunter123345/basma-base";
+// ?model=<base url> points the page at another copy of the weights (local testing: ?model=./assets)
+const MODEL_BASE = new URLSearchParams(location.search).get("model") || `https://huggingface.co/${MODEL_REPO}/resolve/main`;
 const MODEL_CANDIDATES = [
-  { url: `https://huggingface.co/${MODEL_REPO}/resolve/main/onnx/model_w8.onnx`, label: "Downloading the detection model" },
-  { url: `https://huggingface.co/${MODEL_REPO}/resolve/main/onnx/model.onnx`, label: "Downloading the detection model" },
+  { url: `${MODEL_BASE}/onnx/model_w8.onnx`, label: "Downloading the detection model" },
+  { url: `${MODEL_BASE}/onnx/model.onnx`, label: "Downloading the detection model" },
 ];
 ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.29.0/dist/";
 ort.env.wasm.numThreads = (self.crossOriginIsolated && navigator.hardwareConcurrency) ? Math.min(4, navigator.hardwareConcurrency) : 1;

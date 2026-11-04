@@ -54,7 +54,7 @@ class BasmaDetector(nn.Module):
         patches = out[:, 1 + self.n_reg:]
         g = self.head_g(torch.cat([cls, patches.mean(1)], dim=-1)).squeeze(-1)
         pl = self.head_p(patches).squeeze(-1)
-        k = max(1, int(round(self.quantile * pl.shape[1])))
+        k = max(1, int(self.quantile * int(pl.shape[1]) + 0.5))      # int() also works on traced shapes (ONNX export)
         p = pl.topk(k, dim=1).values.mean(1)
         return {"logit": g + p, "logit_g": g, "logit_p": p, "patch": pl}
 

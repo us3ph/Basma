@@ -93,7 +93,7 @@ def main():
         rep["verdict_agree_fp32"] += vt == v32; rep["verdict_agree_w8"] += vt == v8
         rep["verdicts"][vt] = rep["verdicts"].get(vt, 0) + 1
         if len(vecs) < 6:
-            vecs.append({"id": rows[i]["id"], "label": rows[i]["label"], "cond": "social", "views_logit_pt": [float(t) for t in lt], "p_ai": pt, "verdict": vt})
+            vecs.append({"id": rows[i]["id"], "label": rows[i]["label"], "cond": "social", "h": int(h), "w": int(wd), "views_logit_pt": [float(t) for t in lt], "p_ai": pt, "verdict": vt})
     rep["verdict_agree_fp32"] /= len(rows); rep["verdict_agree_w8"] /= len(rows)
     json.dump(rep, open(out / "parity.json", "w"), indent=1); json.dump(vecs, open(out / "test_vectors.json", "w"), indent=1)
     import shutil; shutil.copy(a.fusion, out.parent / "fusion.json")   # web/assets/fusion.json for the page
