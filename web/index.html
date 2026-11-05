@@ -29,14 +29,10 @@
   a.pill svg { width: 16px; height: 16px; fill: currentColor; position: relative; }
   a.pill span { position: relative; }
 
-  /* ---- Shatter headline: "Basma" cut into glass shards ---- */
+  /* ---- Ghost Type headline (web/ghost-type.js): "Basma" types itself, then AI-style ghost endings stream in ---- */
   #hero { display: flex; justify-content: center; margin: 9vh auto 0 auto; }
-  #shatter { position: relative; cursor: default; user-select: none; pointer-events: none; font-size: clamp(4.4em, 13vw, 8.8em); font-weight: 800; letter-spacing: -.045em; line-height: 1; }
-  #shatter .measure { visibility: hidden; white-space: nowrap; display: inline-block; padding: .08em .06em; }
-  #shatter .shard { position: absolute; left: 0; top: 0; white-space: nowrap; padding: .08em .06em; will-change: transform;
-    color: transparent; background: linear-gradient(var(--ga, 180deg), #ffffff 0%, #e4ebff 50%, #a9bdff 100%); -webkit-background-clip: text; background-clip: text;
-    transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .9s ease, filter .25s ease; }
-  #shatter.flying .shard { transition: transform .7s cubic-bezier(.3,.6,.2,1), opacity .7s ease; }
+  #ghost { width: min(1100px, 100%); font-size: clamp(2.3em, 4.8vw, 3.8em); font-weight: 700; letter-spacing: -.035em; line-height: 1.08;
+    color: #f2f2f5; cursor: default; user-select: none; -webkit-user-select: none; }
   #sub { text-align: center; opacity: .75; margin: 14px 0 0 0; font-size: 1.05em; }
 
   /* ---- Frame border: WebGL shader (web/frame-border.js) ---- */
@@ -90,18 +86,18 @@
   #verdict { text-align: center; margin: 0 auto; }
   #verdict .v { font-size: 2.4em; font-weight: 600; letter-spacing: -.5px; line-height: 1.05; }
   #verdict .s { opacity: .8; font-size: 1.05em; margin-top: 4px; }
-  @media (max-height: 820px) { #hero { margin-top: 4vh; } #shatter { font-size: clamp(3.6em, 10.5vw, 7.2em); } .frame { margin-top: 32px; }
+  @media (max-height: 820px) { #hero { margin-top: 4vh; } #ghost { font-size: clamp(2.2em, 4.4vw, 3.4em); } .frame { margin-top: 32px; }
     #under { margin-top: 10px; } }
-  @media (max-height: 640px) { #topbar { padding-top: 14px; } #hero { margin-top: 1vh; } #shatter { font-size: clamp(3em, 8.5vw, 5.6em); }
+  @media (max-height: 640px) { #topbar { padding-top: 14px; } #hero { margin-top: 1vh; } #ghost { font-size: clamp(2em, 4vw, 2.9em); }
     .frame { margin-top: 22px; } #drop { min-height: 130px; height: 130px; } }
   @media (max-width: 600px) { #topbar { padding: 18px 8px 0 8px; } #hero { margin-top: 6vh; } }
-  @media (prefers-reduced-motion: reduce) { .stagger span { animation-duration: .01s; } #shatter .shard { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .stagger span { animation-duration: .01s; } }
 </style>
 </head>
 <body>
 <main>
   <div id="topbar"><div id="brand">Basma <span class="beta">BETA</span></div><a class="pill" href="https://github.com/us3ph/Basma" target="_blank" rel="noopener" aria-label="Basma on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
-  <div id="hero"><div id="shatter" role="heading" aria-level="1" aria-label="Basma"></div></div>
+  <div id="hero"><div id="ghost" role="heading" aria-level="1" aria-label="Basma"></div></div>
   <div class="frame">
     <div id="card">
       <div id="drop" role="button" tabindex="0" aria-label="Choose an image to check">
@@ -125,63 +121,16 @@ window.staggerText = (el, text, perChar = 18) => {
   el.textContent = ""; el.classList.add("stagger");
   [...text].forEach((ch, i) => { const s = document.createElement("span"); s.textContent = ch === " " ? " " : ch; s.style.setProperty("--d", `${i * perChar}ms`); el.appendChild(s); });
 };
-
-// ---- Shatter type: the headline is cut into glass shards that assemble, crack under the cursor and shatter on click
-(() => {
-  const el = document.getElementById("shatter"); const TEXT = "Basma";
-  let shards = [], W = 0, H = 0, flying = false;
-  const rnd = (a, b) => a + Math.random() * (b - a);
-  function build() {
-    el.innerHTML = ""; shards = [];
-    const m = document.createElement("span"); m.className = "measure"; m.textContent = TEXT; el.appendChild(m);
-    const r = m.getBoundingClientRect(); W = r.width; H = r.height; el.style.width = `${W}px`; el.style.height = `${H}px`;
-    const cols = 7, rows = 4, pts = [];
-    for (let j = 0; j <= rows; j++) { pts.push([]); for (let i = 0; i <= cols; i++) {
-      const edgeX = i === 0 || i === cols, edgeY = j === 0 || j === rows;
-      pts[j].push([i / cols * W + (edgeX ? 0 : rnd(-.3, .3) * W / cols), j / rows * H + (edgeY ? 0 : rnd(-.3, .3) * H / rows)]);
-    } }
-    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      const a = pts[j][i], b = pts[j][i + 1], c = pts[j + 1][i], d = pts[j + 1][i + 1];
-      const tris = Math.random() < .5 ? [[a, b, d], [a, d, c]] : [[a, b, c], [b, d, c]];
-      for (const t of tris) {
-        const s = document.createElement("span"); s.className = "shard"; s.textContent = TEXT;
-        s.style.clipPath = `polygon(${t.map(p => `${p[0].toFixed(1)}px ${p[1].toFixed(1)}px`).join(",")})`;
-        s.style.setProperty("--ga", `${rnd(90, 180).toFixed(0)}deg`);
-        s.style.filter = `brightness(${rnd(.88, 1.08).toFixed(2)})`;
-        const cx = (t[0][0] + t[1][0] + t[2][0]) / 3, cy = (t[0][1] + t[1][1] + t[2][1]) / 3;
-        s.dataset.cx = cx; s.dataset.cy = cy; s.dataset.br = s.style.filter;
-        s.style.transform = `translate(${rnd(-220, 220)}px, ${rnd(-160, 160)}px) rotate(${rnd(-50, 50)}deg) scale(1.15)`; s.style.opacity = "0";
-        s.style.transitionDelay = `${rnd(0, 500).toFixed(0)}ms`;
-        el.appendChild(s); shards.push(s);
-      }
-    }
-    requestAnimationFrame(() => requestAnimationFrame(() => shards.forEach(s => { s.style.transform = "none"; s.style.opacity = "1"; })));
-    setTimeout(() => shards.forEach(s => { s.style.transitionDelay = "0ms"; }), 1600);
-  }
-  function crack(e) {
-    if (flying) return;
-    const r = el.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top;
-    for (const s of shards) {
-      const dx = s.dataset.cx - x, dy = s.dataset.cy - y, d = Math.hypot(dx, dy), R = 110;
-      if (d < R) { const k = (R - d) / R; s.style.transform = `translate(${(dx / (d || 1)) * 7 * k}px, ${(dy / (d || 1)) * 7 * k}px) rotate(${(dx > 0 ? 1 : -1) * 1.5 * k}deg)`; s.style.filter = `brightness(${1 + .45 * k})`; }
-      else { s.style.transform = "none"; s.style.filter = s.dataset.br; }
-    }
-  }
-  function shatter() {
-    if (flying) return; flying = true; el.classList.add("flying");
-    for (const s of shards) { const ang = Math.atan2(s.dataset.cy - H / 2, s.dataset.cx - W / 2) + rnd(-.5, .5); const dist = rnd(140, 420);
-      s.style.transform = `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist + 60}px) rotate(${rnd(-200, 200)}deg) scale(${rnd(.6, 1.1)})`; s.style.opacity = "0"; }
-    setTimeout(() => { el.classList.remove("flying"); for (const s of shards) { s.style.transitionDelay = `${rnd(0, 350).toFixed(0)}ms`; s.style.transform = "none"; s.style.opacity = "1"; s.style.filter = s.dataset.br; }
-      setTimeout(() => { shards.forEach(s => { s.style.transitionDelay = "0ms"; }); flying = false; }, 1400); }, 900);
-  }
-  void crack; void shatter;                      // headline is not interactive: it only assembles on load
-  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(build, 200); });
-  document.fonts?.ready.then(build) || build();
-})();
 </script>
 <script type="module">
   import { frameBorder } from "./frame-border.js";
   import { aiBlob } from "./ai-blob.js";
+  import { ghostType } from "./ghost-type.js";
+  ghostType(document.getElementById("ghost"), {
+    text: "Basma",
+    completions: [" spots AI images.", " sees past screenshots.", " finds the fingerprint.", " runs in your browser."],
+    accentColors: ["#0700ff", "#1cdaff"], fill: "linear-gradient(180deg, #ffffff 0%, #e4ebff 50%, #a9bdff 100%)",
+  });
   window.basmaBlob = aiBlob(document.getElementById("send"), { size: 44, colors: ["#0700ff", "#3a86ff", "#1cdaff"], state: "thinking", halo: 0.7 });
   const sendBtn = document.getElementById("send");
   sendBtn.addEventListener("pointerenter", () => { if (!sendBtn.disabled) window.basmaBlob.setState("listening"); });
