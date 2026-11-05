@@ -7,7 +7,7 @@
 const DEFAULTS = { text: "Build anything", completions: [" with a single prompt."], accentColor: "#8B5CF6", accentColors: null,
   ghostOpacity: 0.38, align: "center", typeSpeed: 45, streamSpeed: 70, streamBy: "word", thinkDelay: 600, acceptDelay: 1200,
   holdDelay: 1800, clearStyle: "select", caret: "bar", caretBlink: true, hint: true, hintLabel: "Tab", sweep: true, loop: true,
-  startOnView: true, pauseOnHover: true, clickToAccept: true, paused: false, onAccept: null, fill: null };
+  startOnView: true, pauseOnHover: true, clickToAccept: true, paused: false, onAccept: null, fill: null, acceptedFill: null };
 
 const CSS = `
 .gt { position: relative; text-align: var(--gt-align, center); }
@@ -15,12 +15,15 @@ const CSS = `
 .gt-measure { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; }
 .gt-fill { color: var(--gt-color, currentColor); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .gt.gt-filled .gt-fill { background-image: var(--gt-bg); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* accepted endings keep their own fill; slice = one gradient running through the ending across line breaks */
+.gt.gt-accfill .gt-done > .gt-fill { background-image: var(--gt-acc); -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-box-decoration-break: slice; box-decoration-break: slice; }
 .gt-ghost { opacity: var(--gt-ghost, .38); }
 .gt-done { border-radius: .08em; transition: background-color .18s ease; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .gt-done.sel { background-color: var(--gt-sel); }
 .gt-done.fresh > .gt-fill { animation: gt-solid .35s ease forwards; }
 @keyframes gt-solid { from { opacity: var(--gt-ghost, .38); } to { opacity: 1; } }
-.gt .gt-done.sweep > .gt-fill { background-image: linear-gradient(90deg, transparent 0%, transparent 38%, var(--gt-a1) 46%, var(--gt-a2) 54%, transparent 62%, transparent 100%), var(--gt-bg, linear-gradient(currentColor, currentColor));
+.gt .gt-done.sweep > .gt-fill { background-image: linear-gradient(90deg, transparent 0%, transparent 38%, var(--gt-a1) 46%, var(--gt-a2) 54%, transparent 62%, transparent 100%), var(--gt-acc, var(--gt-bg, linear-gradient(currentColor, currentColor)));
   background-size: 320% 100%, 100% 100%; background-repeat: no-repeat; -webkit-background-clip: text; background-clip: text; color: transparent;
   animation: gt-solid .35s ease forwards, gt-sweep .8s cubic-bezier(.4,.1,.3,1) forwards; }
 @keyframes gt-sweep { from { background-position: 100% 0, 0 0; } to { background-position: 0% 0, 0 0; } }
@@ -52,6 +55,7 @@ export function ghostType(el, opts = {}) {
   el.style.setProperty("--gt-ghost", String(o.ghostOpacity));
   el.style.setProperty("--gt-a1", a1); el.style.setProperty("--gt-a2", a2);
   if (o.fill) { el.classList.add("gt-filled"); el.style.setProperty("--gt-bg", o.fill); }          // gradient text instead of a flat colour
+  if (o.acceptedFill) { el.classList.add("gt-accfill"); el.style.setProperty("--gt-acc", o.acceptedFill); }
   el.style.setProperty("--gt-sel", `color-mix(in srgb, ${a2} 30%, transparent)`);
   if (!el.hasAttribute("aria-label")) el.setAttribute("aria-label", o.text);
 
@@ -174,7 +178,7 @@ export function ghostType(el, opts = {}) {
   }
   reserve();
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(reserve, 150); });
-  document.fonts?.ready.then(reserve);
+  document.fonts?.ready.then(reserve); document.fonts?.addEventListener?.("loadingdone", reserve);   // web fonts change the size
   if (o.startOnView && "IntersectionObserver" in window) {
     const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); start(); } });
     io.observe(el);

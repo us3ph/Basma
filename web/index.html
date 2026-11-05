@@ -7,7 +7,7 @@
 <title>Basma</title>
 <meta name="description" content="AI-image detector that runs entirely in your browser and survives posting, resizing, colour edits and screenshots.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Ubuntu:wght@500&display=swap" rel="stylesheet">
 <style>
   :root { --bg: #000; --fg: #f2f2f5; --ai: #ff6b6b; --human: #5ee39a; --mixed: #ffc857; --c1: #0700ff; --c2: #1cdaff; --c3: #1cdaff; --bg: #000; }
   * { box-sizing: border-box; }
@@ -31,12 +31,13 @@
 
   /* ---- Ghost Type headline (web/ghost-type.js): "Basma" types itself, then AI-style ghost endings stream in ---- */
   #hero { display: flex; justify-content: center; margin: 9vh auto 0 auto; }
-  #ghost { width: min(1100px, 100%); font-size: clamp(2.3em, 4.8vw, 3.8em); font-weight: 700; letter-spacing: -.035em; line-height: 1.08;
-    color: #f2f2f5; cursor: default; user-select: none; -webkit-user-select: none; }
+  #ghost { width: min(760px, 100%); font-family: Ubuntu, Inter, system-ui, sans-serif; font-size: clamp(2em, 5.4vw, 3.4em); font-weight: 500;
+    letter-spacing: -.01em; line-height: 1.15;
+    color: #fff; cursor: default; user-select: none; -webkit-user-select: none; }
   #sub { text-align: center; opacity: .75; margin: 14px 0 0 0; font-size: 1.05em; }
 
   /* ---- Frame border: WebGL shader (web/frame-border.js) ---- */
-  .frame { position: relative; width: min(760px, 100%); margin: 46px auto 0 auto; border-radius: 16px; background: transparent; }
+  .frame { position: relative; width: min(760px, 100%); margin: 66px auto 0 auto; border-radius: 16px; background: transparent; }
   #card { position: relative; z-index: 2; border-radius: 16px; padding: 20px 22px 14px 22px; background: transparent; }
   #drop { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 158px; height: 158px;
     border-radius: 12px; cursor: pointer; transition: background .25s ease; }
@@ -86,10 +87,10 @@
   #verdict { text-align: center; margin: 0 auto; }
   #verdict .v { font-size: 2.4em; font-weight: 600; letter-spacing: -.5px; line-height: 1.05; }
   #verdict .s { opacity: .8; font-size: 1.05em; margin-top: 4px; }
-  @media (max-height: 820px) { #hero { margin-top: 4vh; } #ghost { font-size: clamp(2.2em, 4.4vw, 3.4em); } .frame { margin-top: 32px; }
+  @media (max-height: 820px) { #hero { margin-top: 4vh; } #ghost { font-size: clamp(1.9em, 4.6vw, 3em); } .frame { margin-top: 48px; }
     #under { margin-top: 10px; } }
-  @media (max-height: 640px) { #topbar { padding-top: 14px; } #hero { margin-top: 1vh; } #ghost { font-size: clamp(2em, 4vw, 2.9em); }
-    .frame { margin-top: 22px; } #drop { min-height: 130px; height: 130px; } }
+  @media (max-height: 640px) { #topbar { padding-top: 14px; } #hero { margin-top: 1vh; } #ghost { font-size: clamp(1.7em, 4vw, 2.5em); }
+    .frame { margin-top: 34px; } #drop { min-height: 130px; height: 130px; } }
   @media (max-width: 600px) { #topbar { padding: 18px 8px 0 8px; } #hero { margin-top: 6vh; } }
   @media (prefers-reduced-motion: reduce) { .stagger span { animation-duration: .01s; } }
 </style>
@@ -97,7 +98,7 @@
 <body>
 <main>
   <div id="topbar"><div id="brand">Basma <span class="beta">BETA</span></div><a class="pill" href="https://github.com/us3ph/Basma" target="_blank" rel="noopener" aria-label="Basma on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
-  <div id="hero"><div id="ghost" role="heading" aria-level="1" aria-label="Basma"></div></div>
+  <div id="hero"><div id="ghost" role="heading" aria-level="1" aria-label="Detect AI images"></div></div>
   <div class="frame">
     <div id="card">
       <div id="drop" role="button" tabindex="0" aria-label="Choose an image to check">
@@ -127,9 +128,10 @@ window.staggerText = (el, text, perChar = 18) => {
   import { aiBlob } from "./ai-blob.js";
   import { ghostType } from "./ghost-type.js";
   ghostType(document.getElementById("ghost"), {
-    text: "Basma",
-    completions: [" spots AI images.", " sees past screenshots.", " finds the fingerprint.", " runs in your browser."],
-    accentColors: ["#0700ff", "#1cdaff"], fill: "linear-gradient(180deg, #ffffff 0%, #e4ebff 50%, #a9bdff 100%)",
+    text: "Detect AI images",
+    completions: [" before you believe what you see.", " with just one upload.", " and see what’s actually real.", " without being an expert."],
+    hint: false, accentColors: ["#ffffff", "#1cdaff"],
+    acceptedFill: "linear-gradient(90deg, #e6f7ff 0%, #8fe3ff 40%, #3a86ff 100%)",
   });
   window.basmaBlob = aiBlob(document.getElementById("send"), { size: 44, colors: ["#0700ff", "#3a86ff", "#1cdaff"], state: "thinking", halo: 0.7 });
   const sendBtn = document.getElementById("send");
