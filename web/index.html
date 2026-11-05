@@ -131,7 +131,7 @@ window.staggerText = (el, text, perChar = 18) => {
   ghostType(document.getElementById("ghost"), {
     text: "Detect AI images",
     completions: [" before you believe what you see.", " before you share it with everyone.", " without having to guess anymore.", " whenever something looks too real."],
-    hint: false, accentColors: ["#ffffff", "#1cdaff"],
+    hint: false, accentColors: ["#ffffff", "#1cdaff"], clearStyle: "backspace", retype: "AI images", balance: true,
     acceptedFill: "linear-gradient(90deg, #e6f7ff 0%, #8fe3ff 40%, #3a86ff 100%)", fit: { min: 24, max: 44 },
   });
   window.basmaBlob = aiBlob(document.getElementById("send"), { size: 44, colors: ["#0700ff", "#3a86ff", "#1cdaff"], state: "thinking", halo: 0.7 });

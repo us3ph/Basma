@@ -7,7 +7,7 @@
 const DEFAULTS = { text: "Build anything", completions: [" with a single prompt."], accentColor: "#8B5CF6", accentColors: null,
   ghostOpacity: 0.38, align: "center", typeSpeed: 45, streamSpeed: 70, streamBy: "word", thinkDelay: 600, acceptDelay: 1200,
   holdDelay: 1800, clearStyle: "select", caret: "bar", caretBlink: true, hint: true, hintLabel: "Tab", sweep: true, loop: true,
-  startOnView: true, pauseOnHover: true, clickToAccept: true, paused: false, onAccept: null, fill: null, acceptedFill: null, fit: null };
+  startOnView: true, pauseOnHover: true, clickToAccept: true, paused: false, onAccept: null, fill: null, acceptedFill: null, fit: null, balance: false, retype: "" };
 
 const CSS = `
 .gt { position: relative; text-align: var(--gt-align, center); }
@@ -70,29 +70,39 @@ export function ghostType(el, opts = {}) {
 
   // reserve the size of the longest sentence (with caret and hint) so the layout never shifts
   // fit: { min, max } in px scales the font so the longest sentence stays on one line (wraps only below min)
+  const comps = () => (o.completions.length ? o.completions : [""]);
+  // widths of every full sentence (with the caret); nowrap = as one line, whatever the box width
+  function sentenceWidths(nowrap) {
+    if (nowrap) { measure.style.whiteSpace = "nowrap"; measure.style.maxWidth = "none"; }
+    const ws = [], hs = [];
+    for (const c of comps()) {
+      measure.replaceChildren(span("gt-fill", o.text + c), span(`gt-caret ${o.caret}`));
+      if (o.hint && c) measure.appendChild(span("gt-hint on", o.hintLabel));
+      const r = measure.getBoundingClientRect(); ws.push(r.width); hs.push(r.height);
+    }
+    measure.style.whiteSpace = ""; measure.style.maxWidth = ""; measure.replaceChildren();
+    return { ws, hs, max: Math.max(...ws), mean: ws.reduce((a, b) => a + b, 0) / ws.length };
+  }
+  // fit: { min, max } in px scales the font so the longest sentence stays on one line (wraps only below min);
+  // with balance the room for the centring shift is included
   function fitSize() {
     if (!o.fit) return;
-    el.style.fontSize = `${o.fit.max}px`; measure.style.whiteSpace = "nowrap"; measure.style.maxWidth = "none";
-    let w = 0;
-    for (const c of o.completions.length ? o.completions : [""]) {
-      measure.replaceChildren(span("gt-fill", o.text + c), span(`gt-caret ${o.caret}`));
-      w = Math.max(w, measure.getBoundingClientRect().width);
-    }
-    measure.style.whiteSpace = ""; measure.style.maxWidth = "";
-    const px = Math.floor(o.fit.max * Math.min(1, (el.clientWidth - 2) / w) * 10) / 10;
+    el.style.fontSize = `${o.fit.max}px`;
+    const m = sentenceWidths(true), need = o.balance ? 2 * m.max - m.mean : m.max;
+    const px = Math.floor(o.fit.max * Math.min(1, (el.clientWidth - 2) / need) * 10) / 10;
     el.style.fontSize = `${Math.max(o.fit.min, px)}px`;
   }
+  // the box is as wide as the longest sentence and the text is left-aligned in it, so nothing moves while it types;
+  // balance shifts the box so the average full sentence sits in the middle instead of the longest one
   function reserve() {
-    box.style.width = ""; box.style.minHeight = "";
+    box.style.width = ""; box.style.minHeight = ""; box.style.left = "";
     fitSize();
-    let w = 0, h = 0;
-    for (const c of o.completions.length ? o.completions : [""]) {
-      measure.replaceChildren(span("gt-fill", o.text + c), span(`gt-caret ${o.caret}`));
-      if (o.hint && c) { const k = span("gt-hint on", o.hintLabel); measure.appendChild(k); }
-      const r = measure.getBoundingClientRect(); w = Math.max(w, r.width); h = Math.max(h, r.height);
+    const m = sentenceWidths(false);
+    box.style.width = `${Math.ceil(m.max) + 1}px`; box.style.minHeight = `${Math.ceil(Math.max(...m.hs))}px`;
+    if (o.balance && o.align === "center") {
+      const room = Math.max(0, (el.clientWidth - m.max) / 2);
+      box.style.position = "relative"; box.style.left = `${Math.min(room, (m.max - m.mean) / 2).toFixed(1)}px`;
     }
-    measure.replaceChildren();
-    box.style.width = `${Math.ceil(w) + 1}px`; box.style.minHeight = `${Math.ceil(h)}px`;
   }
 
   // timing: waits only count while not paused (prop, hover, hidden tab); a click or restart cancels the running sequence
@@ -159,7 +169,15 @@ export function ghostType(el, opts = {}) {
           if (o.clearStyle === "backspace") {
             while (doneFill.textContent.length) { doneFill.textContent = doneFill.textContent.slice(0, -1); await sleep(jitter(o.typeSpeed * 0.6), t); }
           } else { done.classList.add("sel"); await sleep(420, t); }
-          clearNow(); i = (i + 1) % n; from = "think";
+          clearNow(); i = (i + 1) % n; idx = i;
+          if (o.retype && o.text.endsWith(o.retype)) {          // erase the end of the base text too, then type it again
+            const keep = o.text.length - o.retype.length;
+            while (base.textContent.length > keep) { base.textContent = base.textContent.slice(0, -1); await sleep(jitter(o.typeSpeed * 0.6), t); }
+            await sleep(300, t);
+            state = "type";
+            for (const ch of o.text.slice(base.textContent.length)) { base.textContent += ch; await sleep(jitter(o.typeSpeed), t); }
+          }
+          from = "think";
         }
       }
     } catch (e) { if (e !== CANCEL) throw e; }
