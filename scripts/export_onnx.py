@@ -74,11 +74,16 @@ def main():
     # parity on validation images through the exact inference pipeline
     rows = select_rows(load_manifests(a.data_dirs), ["val"], a.n, seed=3); extract_all(a.data_dirs, a.img_root)
     fusion = load_fusion(a.fusion)
-    s32 = ort.InferenceSession(str(fp32), providers=["CPUExecutionProvider"]); s8 = ort.InferenceSession(str(w8), providers=["CPUExecutionProvider"])
+    so = ort.SessionOptions(); so.intra_op_num_threads = 4
+    so.add_session_config_entry("session.intra_op.allow_spinning", "0")   # idle ORT threads must not spin while torch runs (10x slowdown)
+    s32 = ort.InferenceSession(str(fp32), so, providers=["CPUExecutionProvider"]); s8 = ort.InferenceSession(str(w8), so, providers=["CPUExecutionProvider"])
     ds = EvalDataset(rows, a.img_root, "social")
     rep = {"n": len(rows), "max_abs_logit_diff_fp32": 0.0, "max_abs_logit_diff_w8": 0.0, "verdict_agree_fp32": 0, "verdict_agree_w8": 0, "verdicts": {}}
     vecs = []
+    t0 = time.time()
     for i in range(len(rows)):
+        if i and i % 10 == 0:
+            print(f"  parity {i}/{len(rows)} ({time.time() - t0:.0f}s)", flush=True)
         xv, nv, _, h, wd = ds[i]
         v = xv[:nv].numpy().astype(np.float32)
         with torch.no_grad():
