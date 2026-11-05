@@ -14,7 +14,10 @@
   html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); font-family: Inter, system-ui, sans-serif; }
   body { background: #000; overflow-x: hidden; }
   main { position: relative; z-index: 1; min-height: 100vh; padding: 0 16px 24px 16px; }
-  #topbar { display: flex; justify-content: space-between; align-items: center; padding: 26px 24px 0 24px; max-width: 1200px; margin: 0 auto; }
+  /* the input frame is centred on the screen: the top bar floats above, the headline sits just over the frame */
+  :root { --frame-h: 192px; --gap: 40px; }
+  #topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; justify-content: space-between; align-items: center;
+    padding: 26px 24px 0 24px; max-width: 1200px; margin: 0 auto; }
   #brand { font-weight: 700; font-size: 1.15em; display: flex; align-items: center; gap: 8px; }
   #brand .beta { font-size: .62em; font-weight: 600; padding: 2px 8px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; opacity: .85; }
   a.pill { position: relative; display: inline-flex; align-items: center; gap: 8px; overflow: hidden; color: #f2f6ff; text-decoration: none;
@@ -30,14 +33,15 @@
   a.pill span { position: relative; }
 
   /* ---- Ghost Type headline (web/ghost-type.js): "Basma" types itself, then AI-style ghost endings stream in ---- */
-  #hero { display: flex; justify-content: center; margin: 9vh auto 0 auto; }
-  #ghost { width: min(760px, 100%); font-family: Ubuntu, Inter, system-ui, sans-serif; font-size: clamp(2em, 5.4vw, 3.4em); font-weight: 500;
+  #hero { display: flex; justify-content: center; align-items: flex-end; margin: 0 auto;
+    height: max(calc(50vh - var(--frame-h) / 2 - var(--gap)), 150px); height: max(calc(50dvh - var(--frame-h) / 2 - var(--gap)), 150px); }
+  #ghost { width: min(760px, 100%); font-family: Ubuntu, Inter, system-ui, sans-serif; font-size: clamp(1.5em, 4.6vw, 2.6em); font-weight: 500;
     letter-spacing: -.01em; line-height: 1.15;
     color: #fff; cursor: default; user-select: none; -webkit-user-select: none; }
   #sub { text-align: center; opacity: .75; margin: 14px 0 0 0; font-size: 1.05em; }
 
   /* ---- Frame border: WebGL shader (web/frame-border.js) ---- */
-  .frame { position: relative; width: min(760px, 100%); margin: 66px auto 0 auto; border-radius: 16px; background: transparent; }
+  .frame { position: relative; width: min(760px, 100%); margin: var(--gap) auto 0 auto; border-radius: 16px; background: transparent; }
   #card { position: relative; z-index: 2; border-radius: 16px; padding: 20px 22px 14px 22px; background: transparent; }
   #drop { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 158px; height: 158px;
     border-radius: 12px; cursor: pointer; transition: background .25s ease; }
@@ -48,7 +52,7 @@
   #drop.has #preview { display: block; }
   /* centred placeholder: appears once the frame has drawn itself, hides once an image is in */
   #ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 1;
-    color: rgba(255,255,255,.5); font-size: 1.1em; opacity: 0; transform: translateY(4px); transition: opacity .45s ease, transform .45s ease; }
+    color: rgba(255,255,255,.5); font-size: 1.1em; text-align: center; padding: 0 28px; opacity: 0; transform: translateY(4px); transition: opacity .45s ease, transform .45s ease; }
   #ph.show { opacity: 1; transform: none; }
   #toolbar { position: absolute; right: 16px; bottom: 14px; z-index: 3; display: flex; }
   #send { position: relative; width: 44px; height: 44px; border-radius: 50%; border: none; padding: 0; background: transparent; color: #fff; cursor: pointer; overflow: visible; }
@@ -87,11 +91,8 @@
   #verdict { text-align: center; margin: 0 auto; }
   #verdict .v { font-size: 2.4em; font-weight: 600; letter-spacing: -.5px; line-height: 1.05; }
   #verdict .s { opacity: .8; font-size: 1.05em; margin-top: 4px; }
-  @media (max-height: 820px) { #hero { margin-top: 4vh; } #ghost { font-size: clamp(1.9em, 4.6vw, 3em); } .frame { margin-top: 48px; }
-    #under { margin-top: 10px; } }
-  @media (max-height: 640px) { #topbar { padding-top: 14px; } #hero { margin-top: 1vh; } #ghost { font-size: clamp(1.7em, 4vw, 2.5em); }
-    .frame { margin-top: 34px; } #drop { min-height: 130px; height: 130px; } }
-  @media (max-width: 600px) { #topbar { padding: 18px 8px 0 8px; } #hero { margin-top: 6vh; } }
+  @media (max-height: 640px) { :root { --frame-h: 164px; --gap: 28px; } #topbar { padding-top: 14px; } #drop { min-height: 130px; height: 130px; } }
+  @media (max-width: 600px) { #topbar { padding: 18px 8px 0 8px; } }
   @media (prefers-reduced-motion: reduce) { .stagger span { animation-duration: .01s; } }
 </style>
 </head>
@@ -131,7 +132,7 @@ window.staggerText = (el, text, perChar = 18) => {
     text: "Detect AI images",
     completions: [" before you believe what you see.", " with just one upload.", " and see what’s actually real.", " without being an expert."],
     hint: false, accentColors: ["#ffffff", "#1cdaff"],
-    acceptedFill: "linear-gradient(90deg, #e6f7ff 0%, #8fe3ff 40%, #3a86ff 100%)",
+    acceptedFill: "linear-gradient(90deg, #e6f7ff 0%, #8fe3ff 40%, #3a86ff 100%)", fit: { min: 24, max: 44 },
   });
   window.basmaBlob = aiBlob(document.getElementById("send"), { size: 44, colors: ["#0700ff", "#3a86ff", "#1cdaff"], state: "thinking", halo: 0.7 });
   const sendBtn = document.getElementById("send");

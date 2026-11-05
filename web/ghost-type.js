@@ -7,7 +7,7 @@
 const DEFAULTS = { text: "Build anything", completions: [" with a single prompt."], accentColor: "#8B5CF6", accentColors: null,
   ghostOpacity: 0.38, align: "center", typeSpeed: 45, streamSpeed: 70, streamBy: "word", thinkDelay: 600, acceptDelay: 1200,
   holdDelay: 1800, clearStyle: "select", caret: "bar", caretBlink: true, hint: true, hintLabel: "Tab", sweep: true, loop: true,
-  startOnView: true, pauseOnHover: true, clickToAccept: true, paused: false, onAccept: null, fill: null, acceptedFill: null };
+  startOnView: true, pauseOnHover: true, clickToAccept: true, paused: false, onAccept: null, fill: null, acceptedFill: null, fit: null };
 
 const CSS = `
 .gt { position: relative; text-align: var(--gt-align, center); }
@@ -69,8 +69,22 @@ export function ghostType(el, opts = {}) {
   el.replaceChildren(box, measure);
 
   // reserve the size of the longest sentence (with caret and hint) so the layout never shifts
+  // fit: { min, max } in px scales the font so the longest sentence stays on one line (wraps only below min)
+  function fitSize() {
+    if (!o.fit) return;
+    el.style.fontSize = `${o.fit.max}px`; measure.style.whiteSpace = "nowrap"; measure.style.maxWidth = "none";
+    let w = 0;
+    for (const c of o.completions.length ? o.completions : [""]) {
+      measure.replaceChildren(span("gt-fill", o.text + c), span(`gt-caret ${o.caret}`));
+      w = Math.max(w, measure.getBoundingClientRect().width);
+    }
+    measure.style.whiteSpace = ""; measure.style.maxWidth = "";
+    const px = Math.floor(o.fit.max * Math.min(1, (el.clientWidth - 2) / w) * 10) / 10;
+    el.style.fontSize = `${Math.max(o.fit.min, px)}px`;
+  }
   function reserve() {
     box.style.width = ""; box.style.minHeight = "";
+    fitSize();
     let w = 0, h = 0;
     for (const c of o.completions.length ? o.completions : [""]) {
       measure.replaceChildren(span("gt-fill", o.text + c), span(`gt-caret ${o.caret}`));
