@@ -41,7 +41,7 @@ async function fetchWithProgress(url, label) {
 }
 async function loadJSON(p) { const r = await fetch(p); if (!r.ok) throw new Error(`${p}: HTTP ${r.status}`); return r.json(); }
 
-let fusion = null, session = null, worker = null, seq = 0, current = null;
+let fusion = null, session = null, worker = null, seq = 0, current = null, modelReady = false;
 const pending = new Map();
 function startWorker() {
   try {
@@ -80,7 +80,7 @@ async function init() {
     }
     if (!ready) throw lastErr || new Error("no model could be loaded");
     console.log("basma model running on", ready === "worker" ? "a background worker" : "the main thread");
-    progress(1); status("Ready to check"); setTimeout(() => $("bar").classList.add("done"), 700);
+    modelReady = true; progress(1); status("Ready to check"); setTimeout(() => $("bar").classList.add("done"), 700);
     $("send").disabled = !current; window.basmaBlob?.setState("idle");
   } catch (e) { console.error(e); status("The detector couldn't load. Check your connection and refresh the page."); }
 }
@@ -103,10 +103,19 @@ async function setImage(file) {
     current = img;
     const prev = $("preview"); prev.src = img.canvas.toDataURL("image/jpeg", 0.85); prev.alt = file.name;
     $("drop").classList.add("has"); $("ph").classList.remove("show");
-    $("send").disabled = !fusion || !(worker || session);
+    $("send").disabled = !modelReady;
     clearResult();
-    if (fusion && (worker || session)) status("Ready to check");
+    if (modelReady) status("Ready to check");
   } catch (e) { console.error(e); status("That image couldn't be read."); }
+}
+
+// remove the chosen image so another one can be picked (the file input is reset, so the same file can be chosen again)
+function clearImage() {
+  current = null;
+  const prev = $("preview"); prev.removeAttribute("src"); prev.alt = "";
+  $("drop").classList.remove("has"); $("ph").classList.add("show"); $("file").value = "";
+  $("send").disabled = true; clearResult();
+  if (modelReady) status("Ready to check");
 }
 
 function verdictHTML(r) {
@@ -118,7 +127,7 @@ function verdictHTML(r) {
 async function detect() {
   if (!current) { status("Drop an image first."); return; }
   clearResult();
-  $("send").disabled = true; window.basmaBlob?.setState("thinking"); checking();
+  $("send").disabled = true; $("clear").disabled = true; window.basmaBlob?.setState("thinking"); checking();
   try {
     const t0 = performance.now();
     const base = toBase(current);
@@ -130,13 +139,15 @@ async function detect() {
     showResult(r); window.basmaBlob?.speak(1600);
     console.log("basma", r);
   } catch (e) { console.error(e); status("Something went wrong while analyzing. Please try again."); }
-  finally { $("send").disabled = false; window.basmaBlob?.setState("idle"); }
+  finally { $("send").disabled = !current; $("clear").disabled = false; window.basmaBlob?.setState("idle"); }
 }
 
 $("send").addEventListener("click", detect);
 $("file").addEventListener("change", (e) => setImage(e.target.files[0]));
 const drop = $("drop");
 drop.addEventListener("click", (e) => { if (e.target.id !== "send") $("file").click(); });
+$("clear").addEventListener("click", (e) => { e.stopPropagation(); clearImage(); drop.focus(); });
+drop.addEventListener("keydown", (e) => { if (e.target === drop && current && (e.key === "Delete" || e.key === "Backspace")) { e.preventDefault(); clearImage(); } });
 drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
 drop.addEventListener("dragleave", () => drop.classList.remove("over"));
 drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); setImage(e.dataTransfer.files[0]); });
