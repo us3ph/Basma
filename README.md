@@ -46,3 +46,20 @@ LAION-style web images, 8 % of which are still flagged as AI at the shipped thre
 v1 (same model, narrower real photos) flagged 10.4 % of held-out real photos; v2 added web images (CC3M, 2018),
 stock photography and phone photos, and a calibration set, which brought that to 2.4 % and raised ranking quality
 at 1 % FPR from 55.9 % to 74.1 %.
+
+### External benchmark: NTIRE 2026 Robust AI-Generated Image Detection in the Wild (public test, 2026-11-06)
+
+2,500 labelled images, half with stacked "in the wild" distortions ([docs/NTIRE.md](docs/NTIRE.md),
+`scripts/bench_ntire.py`, Kaggle kernel `basma-bench-ntire`). ROC AUC:
+
+| System | Clean | Robust (ranking metric) |
+|---|---|---|
+| Basma v2 (never trained on NTIRE data) | 0.895 | 0.705 |
+| Community Forensics frontier detector (Aug 2026, never trained on NTIRE data) | 0.919 | 0.691 |
+| MICV, 1st place (trained on the NTIRE training set) | 0.998 | 0.974 |
+| vincentlc, 5th place | 0.950 | 0.863 |
+
+Out of the box Basma is not competitive here: it is on par with the strongest public detector but far below the
+challenge entries, which trained on NTIRE's own 227k-image training set. Weakest cases: neural compression
+(JPEG AI 0.58), adversarial embeddings (0.61), four or five stacked distortions (0.65 / 0.59), and NTIRE's real
+photos, 21 % of the clean ones flagged as AI at the shipped threshold.
