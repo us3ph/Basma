@@ -1,0 +1,17 @@
+{
+ "id": "joseph423242/basma-bench-ntire",
+ "title": "Basma bench NTIRE",
+ "code_file": "basma_bench_ntire.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "dataset_sources": [],
+ "competition_sources": [],
+ "kernel_sources": [
+  "joseph423242/basma-train-v2"
+ ],
+ "model_sources": []
+}
