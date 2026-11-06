@@ -71,15 +71,20 @@ class ParquetSource(Source):
         return self._files
 
     def units(self, rng, budget):
-        """budget: dict(max_files, rgs_per_file, max_unit_mb, keep_big). Row-group counts/sizes come from the footers."""
+        """budget: dict(max_files, rgs_per_file, max_unit_mb, keep_big, skip_units). Row-group counts/sizes come from the
+        footers. skip_units ("file#rg" already read by an earlier build): untouched files come first, used row groups are dropped."""
         files = list(self.files())
         rng.shuffle(files)
+        skip = budget.get("skip_units") or set()
+        if skip:
+            used = {u.split("#")[0] for u in skip}
+            files.sort(key=lambda f: f in used)                  # stable: keeps the shuffled order within each group
         files = files[:budget.get("max_files", len(files))]
         out, big = [], []
         for f in files:
             with hffs().open(f"datasets/{self.repo}/{f}", "rb") as fh:
                 md = pq.ParquetFile(fh).metadata
-            rgs = [(rg, md.row_group(rg).total_byte_size) for rg in range(md.num_row_groups)]
+            rgs = [(rg, md.row_group(rg).total_byte_size) for rg in range(md.num_row_groups) if f"{f}#{rg}" not in skip]
             rng.shuffle(rgs)
             for rg, nbytes in rgs[:budget.get("rgs_per_file", md.num_row_groups)]:
                 (big if nbytes > budget.get("max_unit_mb", 1e12) * 1e6 else out).append((f, rg))
@@ -181,7 +186,8 @@ class TarSource(Source):
         self.prefix, self.per_shard, self.family_override = prefix, per_shard, family_override
 
     def units(self, rng, budget):
-        files = list_files(self.repo, ".tar", prefix=self.prefix)
+        skip = budget.get("skip_units") or set()                 # shards an earlier build already read
+        files = [f for f in list_files(self.repo, ".tar", prefix=self.prefix) if f not in skip]
         rng.shuffle(files)
         return files[:budget.get("max_files", len(files))]
 

@@ -10,6 +10,7 @@ Splits: train / val (8 % of train sources by hash) / eval:<pool>; AI images of h
 eval:unseen_vendors whatever the source."""
 import argparse
 import collections
+import glob
 import hashlib
 import io
 import json
@@ -124,6 +125,16 @@ def _reader(src, units, q, chunk, stop):
         q.put(None)
 
 
+def load_prev(pattern):
+    """Manifests of earlier builds (BASMA_PREV_MANIFESTS glob): their image ids (sha1[:16]) and the units each source read."""
+    ids, units = set(), collections.defaultdict(set)
+    for p in sorted(glob.glob(pattern, recursive=True)) if pattern else []:
+        with open(p) as fh:
+            for line in fh:
+                r = json.loads(line); ids.add(r["id"]); units[r["source"]].add(str(r.get("unit", "")))
+    return ids, units
+
+
 def build(plan_name, plan, out_dir, workers=4, seed=0, log=print, chunk=64):
     import queue
     import threading
@@ -134,10 +145,17 @@ def build(plan_name, plan, out_dir, workers=4, seed=0, log=print, chunk=64):
     stats = collections.Counter(); errors = collections.Counter()
     t0 = time.time()
     skip = set(filter(None, os.environ.get("BASMA_SKIP", "").split(",")))
+    # images already in an earlier build (training data AND the bench) are never added again
+    prev_ids, prev_units = load_prev(os.environ.get("BASMA_PREV_MANIFESTS", ""))
+    if prev_ids:
+        log(f"earlier builds: {len(prev_ids)} images, units of {len(prev_units)} sources (skipped if met again)")
     with Pool(workers) as pool:
         for src, budget in plan:
             if src.name in skip:
                 log(f"skipping {src.name} (BASMA_SKIP)"); continue
+            if budget.get("prev_sources"):
+                budget = dict(budget, skip_units=set().union(*(prev_units.get(n, set()) for n in budget["prev_sources"])))
+                log(f"   {src.name}: skipping {len(budget['skip_units'])} units read by earlier builds")
             units = src.units(rng, budget)
             max_images = budget.get("max_images", 10 ** 9)
             cap_gen = budget.get("cap_per_gen", 10 ** 9)
@@ -166,9 +184,13 @@ def build(plan_name, plan, out_dir, workers=4, seed=0, log=print, chunk=64):
                     sha = hashlib.sha1(raw).hexdigest()
                     if sha in seen:
                         stats["dup"] += 1; continue
+                    if sha[:16] in prev_ids:
+                        stats["dup_prev"] += 1; continue
                     label = int(meta["label"])
                     if label == 1:
                         gen, family, vendor = canon(meta["gen"])
+                        if budget.get("drop_holdout") and is_holdout(family):   # keeps the unseen-vendor test exactly as it was
+                            stats["holdout_dropped"] += 1; continue
                         if src.family_override and not is_holdout(family):
                             family = src.family_override
                     else:
@@ -268,6 +290,72 @@ def plan_reals(scale=1.0):
     ]
 
 
+def _fresh(*prev):
+    """v3 budgets: skip units the named sources read in earlier builds; drop held-out vendor families (no new test rows)."""
+    return {"prev_sources": list(prev), "drop_holdout": True}
+
+
+def plan_v3ai(scale=1.0):
+    """v3 additions, AI: the Community Forensics Small shards v2 did not read (more of its ~4,800 generators), more recent
+    commercial generators (Rapidata row groups not read before, GPT-image-2 batch 1) and StyleGAN2 faces (GAN era)."""
+    sh = json.load(open(os.path.join(os.path.dirname(__file__), "cf_small_shards.json")))
+    k = lambda n: max(1, int(n * scale))
+    ai = S.ParquetSource("cf_small_ai", "OwensLab/CommunityForensics-Small", [("image_data", None, None)], files=sh["ai_shards"],
+                         meta_cols=("model_name", "real_source", "label", "architecture", "format"), row_meta=S.cf_row_meta, family_override="cf")
+    return [
+        (ai, {"max_files": k(47), "max_images": k(50_000), "cap_per_gen": 20, **_fresh("cf_small_ai")}),
+        rapidata("rd_bench2026", "Rapidata/text-to-image-human-feedback-benchmark", max_files=k(120), cap_per_gen=3000, **_fresh("rd_bench2026")),
+        rapidata("rd_flux2pro", "Rapidata/Flux-2-pro_t2i_human_preference", max_files=k(18), cap_per_gen=3000, **_fresh("rd_flux2pro")),
+        rapidata("rd_4o", "Rapidata/OpenAI-4o_t2i_human_preference", max_files=k(11), cap_per_gen=3000, **_fresh("rd_4o")),
+        rapidata("rd_imagen4u", "Rapidata/Imagen-4-ultra-24-7-25_t2i_human_preference", max_files=k(15), cap_per_gen=3000, **_fresh("rd_imagen4u")),
+        rapidata("rd_ideogram2", "Rapidata/Ideogram-V2_t2i_human_preference", max_files=k(15), cap_per_gen=3000, **_fresh("rd_ideogram2")),
+        rapidata("rd_frames", "Rapidata/Runway_Frames_t2i_human_preferences", max_files=k(20), cap_per_gen=3000, **_fresh("rd_frames")),
+        rapidata("rd_hidream", "Rapidata/Hidream_t2i_human_preference", max_files=k(12), cap_per_gen=3000, **_fresh("rd_hidream")),
+        (S.HfFilesSource("gpt_image_2b", "Goku-OpenLab/gpt-image-2-prompts-datasets", 1, "gpt-image-2", prefix="gpt-image-2/images/1/"), {"max_images": k(4000), **_fresh()}),
+        (S.HfFilesSource("stylegan2_faces", "gojay/StyleGAN2-Face", 1, "stylegan2-ffhq"), {"max_images": k(3000), **_fresh()}),
+    ]
+
+
+def plan_v3real(scale=1.0):
+    """v3 additions, real: photo sources v2 never saw (LSDIR high-res photography, SUN397 scenes, Food-101 phone photos,
+    Fashionpedia people, Stanford Cars, Oxford pets) + unread parts of Pexels, CC3M and WikiArt. None of them is a
+    bench source (Flickr2K, Open Images, ImageNet, WildRF, CF-Eval reals) or a calibration source (VOC, VizWiz)."""
+    k = lambda n: max(1, int(n * scale))
+    orig = lambda f: "/train-" in f or "/test-" in f            # tanganke repos also hold corrupted copies (contrast, noise...)
+    return [
+        (S.ParquetSource("lsdir", "danjacobellis/LSDIR", [("image", 0, "lsdir")]), {"max_files": k(70), "rgs_per_file": 2, "max_images": k(12_000), **_fresh()}),
+        (S.ParquetSource("sun397", "tanganke/sun397", [("image", 0, "sun397")], file_filter=orig), {"max_files": k(12), "max_images": k(10_000), **_fresh()}),
+        (S.ParquetSource("food101", "ethz/food101", [("image", 0, "food101")], file_filter=lambda f: "/train-" in f), {"max_files": k(4), "rgs_per_file": 20, "max_images": k(6000), **_fresh()}),
+        (S.ParquetSource("fashionpedia", "detection-datasets/fashionpedia", [("image", 0, "fashionpedia")], file_filter=lambda f: "/train-" in f), {"max_files": k(1), "max_images": k(4000), **_fresh()}),
+        (S.ParquetSource("cars", "tanganke/stanford_cars", [("image", 0, "stanford-cars")], file_filter=orig), {"max_files": k(2), "rgs_per_file": 25, "max_images": k(3000), **_fresh()}),
+        (S.ParquetSource("pets", "timm/oxford-iiit-pet", [("image", 0, "oxford-pets")]), {"max_images": k(3000), **_fresh()}),
+        (S.ParquetSource("pexels_v3", "ujin-song/pexels-image-60k", [("image", 0, "pexels")], family_override="real:pexels"), {"max_files": k(24), "max_images": k(8000), **_fresh("pexels", "pexels_more")}),
+        (S.TarSource("cc3m_v3", "pixparse/cc3m-wds", 0, "cc3m", prefix="cc3m-train-", per_shard=400, family_override="real:cc3m"), {"max_files": k(40), "max_images": k(15_000), **_fresh("cc3m")}),
+        (S.ParquetSource("wikiart_v3", "huggan/wikiart", [("image", 0, "wikiart")], family_override="real:wikiart"), {"max_files": k(10), "max_images": k(5000), **_fresh("wikiart")}),
+    ]
+
+
+def plan_mini3():
+    """Local check of the v3 readers and the skip logic (run with BASMA_PREV_MANIFESTS=data/mini/manifest_*.jsonl)."""
+    sh = json.load(open(os.path.join(os.path.dirname(__file__), "cf_small_shards.json")))
+    ai = S.ParquetSource("cf_small", "OwensLab/CommunityForensics-Small", [("image_data", None, None)], files=sh["ai_shards"][:2],
+                         meta_cols=("model_name", "real_source", "label", "architecture", "format"), row_meta=S.cf_row_meta, family_override="cf")
+    orig = lambda f: "/train-" in f or "/test-" in f
+    one = {"max_files": 1, "rgs_per_file": 1}
+    return [
+        (ai, {"max_files": 1, "rgs_per_file": 1, "max_images": 20, "cap_per_gen": 5, **_fresh("cf_small")}),
+        rapidata("rd_bench2026", "Rapidata/text-to-image-human-feedback-benchmark", max_files=1, rgs_per_file=1, max_images=30, cap_per_gen=30, **_fresh("rd_bench2026")),
+        (S.HfFilesSource("gpt_image_2b", "Goku-OpenLab/gpt-image-2-prompts-datasets", 1, "gpt-image-2", prefix="gpt-image-2/images/1/"), {"max_images": 8, **_fresh()}),
+        (S.HfFilesSource("stylegan2_faces", "gojay/StyleGAN2-Face", 1, "stylegan2-ffhq"), {"max_images": 8, **_fresh()}),
+        (S.ParquetSource("lsdir", "danjacobellis/LSDIR", [("image", 0, "lsdir")]), {**one, "max_images": 8, **_fresh()}),
+        (S.ParquetSource("sun397", "tanganke/sun397", [("image", 0, "sun397")], file_filter=orig), {**one, "max_images": 10, **_fresh()}),
+        (S.ParquetSource("food101", "ethz/food101", [("image", 0, "food101")], file_filter=lambda f: "/train-" in f), {**one, "max_images": 10, **_fresh()}),
+        (S.ParquetSource("cars", "tanganke/stanford_cars", [("image", 0, "stanford-cars")], file_filter=orig), {**one, "max_images": 10, **_fresh()}),
+        (S.ParquetSource("pets", "timm/oxford-iiit-pet", [("image", 0, "oxford-pets")]), {**one, "max_images": 10, **_fresh()}),
+        (S.TarSource("cc3m_v3", "pixparse/cc3m-wds", 0, "cc3m", prefix="cc3m-train-", per_shard=10, family_override="real:cc3m"), {"max_files": 1, "max_images": 10, **_fresh("cc3m")}),
+    ]
+
+
 def plan_eval(scale=1.0, tmp="/tmp/basma_dl"):
     """Held-out pools: CF-Eval (21 unseen generators + RAISE/COCO/FFHQ reals), GenImage test, WildRF, unseen-vendor
     Rapidata sets, unseen real sources (Flickr2K, Open Images)."""
@@ -317,7 +405,8 @@ def plan_mini():
     ]
 
 
-PLANS = {"cf": plan_cf, "recent": plan_recent, "reals": plan_reals, "eval": plan_eval, "mini": lambda scale=1.0: plan_mini()}
+PLANS = {"cf": plan_cf, "recent": plan_recent, "reals": plan_reals, "eval": plan_eval, "v3ai": plan_v3ai, "v3real": plan_v3real,
+         "mini": lambda scale=1.0: plan_mini(), "mini3": lambda scale=1.0: plan_mini3()}
 
 
 def main():

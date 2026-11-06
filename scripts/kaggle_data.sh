@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CPU kernel: build one data plan into /kaggle/working (becomes the kernel's output dataset).
-#   !bash scripts/kaggle_data.sh cf|recent|eval [scale]     (scale 0.5 = half-size budgets)
+#   !bash scripts/kaggle_data.sh cf|recent|reals|eval|v3ai|v3real [scale]     (scale 0.5 = half-size budgets)
 set -uo pipefail
 cd "$(dirname "$0")/.."
 PLAN="${1:?plan}"; SCALE="${2:-1.0}"
