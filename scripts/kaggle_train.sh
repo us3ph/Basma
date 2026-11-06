@@ -20,4 +20,14 @@ done
 BL=""; for b in thermostatic ateeqq commfor; do [ -s "$OUT/baselines/$b.jsonl" ] && BL="$BL $b=$OUT/baselines/$b.jsonl"; done
 stamp "fusion";     python -m basma.fusion --scores "$OUT/scores/scores.jsonl" --baseline $BL --out "$OUT/report" 2>&1 | tee logs/fusion.log
 python -m basma.report_md "$OUT/report/report.json" > docs/RESULTS.md && stamp "done -> $OUT/report/report.json, docs/RESULTS.md"
-stamp "package";    tar czf /kaggle/working/basma_model.tgz "$OUT/best" "$OUT/report" docs/RESULTS.md && ls -lh /kaggle/working/basma_model.tgz
+# Basma Bench, part 2: the NTIRE 2026 public test (2,500 images, never trained on) with this run's model and fusion;
+# locally: python scripts/bench_track.py add --version vN ... --ntire $OUT/ntire/scores.jsonl (see docs/BENCH.md)
+stamp "bench ntire"; python - <<'PYN' && python scripts/bench_ntire.py --model "$OUT/best" --fusion "$OUT/report/fusion.json" --images /tmp/ntire/img \
+    --labels /tmp/ntire/test_labels.csv --out "$OUT/ntire" --baseline none 2>&1 | tee logs/ntire.log | grep -E "scored|Basma|Traceback" || echo "NTIRE bench skipped"
+import subprocess
+from huggingface_hub import hf_hub_download
+R = "deepfakesMSU/NTIRE-RobustAIGenDetection-test-public"
+z = hf_hub_download(R, "test_images.zip", repo_type="dataset", local_dir="/tmp/ntire"); hf_hub_download(R, "test_labels.csv", repo_type="dataset", local_dir="/tmp/ntire")
+subprocess.run(["unzip", "-q", "-o", z, "-d", "/tmp/ntire/img"], check=True)
+PYN
+stamp "package";    tar czf /kaggle/working/basma_model.tgz "$OUT/best" "$OUT/report" $( [ -d "$OUT/ntire" ] && echo "$OUT/ntire" ) docs/RESULTS.md && ls -lh /kaggle/working/basma_model.tgz

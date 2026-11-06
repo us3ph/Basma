@@ -47,6 +47,8 @@ v1 (same model, narrower real photos) flagged 10.4 % of held-out real photos; v2
 stock photography and phone photos, and a calibration set, which brought that to 2.4 % and raised ranking quality
 at 1 % FPR from 55.9 % to 74.1 %.
 
+**Progress across versions** is tracked on Basma Bench, our own fixed test that no version trains on: [docs/BENCH.md](docs/BENCH.md).
+
 ### External benchmark: NTIRE 2026 Robust AI-Generated Image Detection in the Wild (public test, 2026-11-06)
 
 2,500 labelled images, half with stacked "in the wild" distortions ([docs/NTIRE.md](docs/NTIRE.md),

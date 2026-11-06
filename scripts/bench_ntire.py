@@ -103,7 +103,7 @@ def main():
             r = rows[int(idx[b])]; k = int(nv[b])
             f = {"lg": float(lg[b, 0]), "lc": [float(v) for v in lg[b, 1:k]], "h": int(h[b]), "w": int(w[b])}
             p = fusion.prob(f)
-            r.update(basma=fusion.raw(f), basma_p=p, verdict=fusion.verdict(p), lg=f["lg"], lc=f["lc"])
+            r.update(basma=fusion.raw(f), basma_p=p, verdict=fusion.verdict(p), lg=f["lg"], lc=f["lc"], h=f["h"], w=f["w"])
     print(f"basma scored in {(time.time() - t0) / 60:.1f} min", flush=True)
 
     systems = ["basma", "basma_p"]
@@ -138,7 +138,7 @@ def main():
     json.dump(res, open(os.path.join(a.out, "ntire_results.json"), "w"), indent=1)
 
     f4 = lambda v: "–" if v is None else f"{v:.4f}"  # noqa: E731
-    name = {"basma": "**Basma v2** (fused score)", "basma_p": "Basma v2 (calibrated probability)", "thermostatic": "Thermostatic (Aug 2026)"}
+    name = {"basma": "**Basma** (fused score)", "basma_p": "Basma (calibrated probability)", "thermostatic": "Thermostatic (Aug 2026)"}
     L = ["# NTIRE 2026 Robust AI-Generated Image Detection in the Wild: public test", "",
          f"{len(rows)} images ({sum(r['label'] for r in rows)} AI, {sum(1 - r['label'] for r in rows)} real; half distorted). ROC AUC, higher is better. "
          "Clean = images with is_distorted 0, Robust = is_distorted 1 (the challenge ranks by Robust), All = both. "
