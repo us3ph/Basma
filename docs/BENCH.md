@@ -13,6 +13,7 @@ Our own fixed test, scored for every version. No version ever trains on these im
 |---|---|---|---|---|---|
 | **v1** | 2026-11-04 | 87.1 % / 88.5 % | 87.1 % / 87.4 % | – | – |
 | **v2** | 2026-11-05 | 83.7 % / 95.7 % | 81.6 % / 95.2 % | 80.6 % / 67.5 % | 55.5 % / 65.3 % |
+| **v3** | 2026-11-07 | 79.0 % / 97.5 % | 75.8 % / 97.0 % | 75.1 % / 79.8 % | 48.5 % / 72.3 % |
 
 ## Mistakes: AI called Real / Real called AI
 
@@ -20,6 +21,7 @@ Our own fixed test, scored for every version. No version ever trains on these im
 |---|---|---|---|---|
 | v1 | 11.4 % / 9.7 % | 11.4 % / 10.4 % | – | – |
 | v2 | 12.3 % / 2.0 % | 13.8 % / 2.4 % | 11.2 % / 20.7 % | 34.5 % / 27.2 % |
+| v3 | 14.3 % / 0.7 % | 15.7 % / 0.8 % | 12.3 % / 8.0 % | 34.6 % / 16.7 % |
 
 ## AUROC
 
@@ -27,36 +29,38 @@ Our own fixed test, scored for every version. No version ever trains on these im
 |---|---|---|---|---|
 | v1 | 0.943 | 0.942 | – | – |
 | v2 | 0.964 | 0.960 | 0.895 | 0.705 |
+| v3 | 0.960 | 0.959 | 0.926 | 0.753 |
 
 ## Held-out pools (original / after edits)
 
 AI pools show *AI detected*, real-photo pools *Human detected*; mixed pools show both as AI / Human.
 
-| Pool | v1 | v2 |
-|---|---|---|
-| Unseen commercial generators (Seedream, Reve, Grok, Qwen, …) | 97.0 % → 96.6 % | 95.0 % → 93.4 % |
-| Community Forensics Eval | 84.9 % / 74.8 % → 84.8 % / 74.8 % | 81.4 % / 92.3 % → 78.2 % / 92.5 % |
-| GenImage (older generators, ImageNet photos) | 61.6 % / 94.7 % → 61.4 % / 92.4 % | 53.2 % / 97.6 % → 51.3 % / 96.6 % |
-| WildRF (Reddit / Facebook / Twitter) | 89.8 % / 83.8 % → 91.2 % / 83.5 % | 87.8 % / 92.8 % → 86.0 % / 93.4 % |
-| Flickr2K photos | 90.7 % → 89.0 % | 97.8 % → 95.9 % |
-| Open Images photos | 93.2 % → 92.6 % | 97.5 % → 96.7 % |
+| Pool | v1 | v2 | v3 |
+|---|---|---|---|
+| Unseen commercial generators (Seedream, Reve, Grok, Qwen, …) | 97.0 % → 96.6 % | 95.0 % → 93.4 % | 94.0 % → 91.7 % |
+| Community Forensics Eval | 84.9 % / 74.8 % → 84.8 % / 74.8 % | 81.4 % / 92.3 % → 78.2 % / 92.5 % | 75.4 % / 94.4 % → 70.4 % / 93.6 % |
+| GenImage (older generators, ImageNet photos) | 61.6 % / 94.7 % → 61.4 % / 92.4 % | 53.2 % / 97.6 % → 51.3 % / 96.6 % | 45.6 % / 98.5 % → 42.1 % / 98.0 % |
+| WildRF (Reddit / Facebook / Twitter) | 89.8 % / 83.8 % → 91.2 % / 83.5 % | 87.8 % / 92.8 % → 86.0 % / 93.4 % | 79.3 % / 96.1 % → 77.5 % / 96.0 % |
+| Flickr2K photos | 90.7 % → 89.0 % | 97.8 % → 95.9 % | 98.8 % → 98.3 % |
+| Open Images photos | 93.2 % → 92.6 % | 97.5 % → 96.7 % | 98.8 % → 98.3 % |
 
 ## Held-out by edit (AI detected / Human detected)
 
-| Edit | v1 | v2 |
-|---|---|---|
-| original | 87.1 % / 88.5 % | 83.7 % / 95.7 % |
-| JPEG 60 | 87.0 % / 88.4 % | 81.9 % / 95.5 % |
-| WebP 50 | 87.2 % / 84.8 % | 81.6 % / 92.9 % |
-| resized to 50 % | 88.0 % / 87.6 % | 83.0 % / 95.3 % |
-| screenshot | 87.4 % / 87.4 % | 80.5 % / 95.3 % |
-| social-media pipeline | 87.7 % / 87.0 % | 80.5 % / 94.5 % |
-| colour edit | 85.0 % / 90.9 % | 79.4 % / 97.1 % |
-| blur / noise | 87.1 % / 85.6 % | 83.3 % / 94.9 % |
-| crop 50 % | 86.9 % / 87.7 % | 82.7 % / 95.7 % |
-| several edits | 87.9 % / 87.3 % | 81.4 % / 95.2 % |
+| Edit | v1 | v2 | v3 |
+|---|---|---|---|
+| original | 87.1 % / 88.5 % | 83.7 % / 95.7 % | 79.0 % / 97.5 % |
+| JPEG 60 | 87.0 % / 88.4 % | 81.9 % / 95.5 % | 77.0 % / 96.9 % |
+| WebP 50 | 87.2 % / 84.8 % | 81.6 % / 92.9 % | 75.4 % / 95.2 % |
+| resized to 50 % | 88.0 % / 87.6 % | 83.0 % / 95.3 % | 77.2 % / 97.5 % |
+| screenshot | 87.4 % / 87.4 % | 80.5 % / 95.3 % | 74.8 % / 97.1 % |
+| social-media pipeline | 87.7 % / 87.0 % | 80.5 % / 94.5 % | 74.5 % / 96.8 % |
+| colour edit | 85.0 % / 90.9 % | 79.4 % / 97.1 % | 73.3 % / 98.5 % |
+| blur / noise | 87.1 % / 85.6 % | 83.3 % / 94.9 % | 75.9 % / 97.6 % |
+| crop 50 % | 86.9 % / 87.7 % | 82.7 % / 95.7 % | 77.0 % / 97.1 % |
+| several edits | 87.9 % / 87.3 % | 81.4 % / 95.2 % | 77.0 % / 96.5 % |
 
 ## Versions
 
 * **v1**: first run: real photos from only 4 sources (COCO, LandscapesHQ, FFHQ, VISION); never shipped
 * **v2**: added 29k varied real photos (CC3M, Pexels, VISION) and a threshold that also holds on never-trained real photos (VOC, VizWiz); live on the website
+* **v3**: added 66k real photos of new kinds (LSDIR, SUN397, food, fashion, cars, pets, more Pexels / CC3M / WikiArt) and 56k AI images (Community Forensics, 2026 generators, GPT-image-2, StyleGAN2 faces), twice the training steps. Real photos called AI fell to 0.7 % (NTIRE clean 20.7 % -> 8.0 %); at the same false-alarm rate it catches more AI than v2 (held-out, 1 % of reals flagged: 78.8 -> 81.0 % original, 73.5 -> 77.0 % edited), but its shipped threshold is stricter, so fewer AI images are answered AI. Not live yet
