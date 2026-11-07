@@ -1,5 +1,6 @@
 """Manifests, tar extraction, the training dataset (attack + views) and the deterministic evaluation dataset."""
 import io
+import glob
 import json
 import os
 import tarfile
@@ -19,8 +20,18 @@ BUCKET_IDS = {b: i for i, b in enumerate(TRAIN_BUCKETS)}
 MAX_VIEWS = 4   # global + up to 3 texture crops
 
 
-def load_manifests(dirs):
-    """All manifest_*.jsonl rows from the given directories (each row gets 'dir')."""
+def load_exclude():
+    """Row ids the leak guard found to be near-copies of test images (BASMA_EXCLUDE: file(s), glob allowed)."""
+    ids, pattern = set(), os.environ.get("BASMA_EXCLUDE", "")
+    for f in (glob.glob(pattern, recursive=True) if pattern else []):
+        ids.update(line.strip() for line in open(f) if line.strip())
+    return ids
+
+
+def load_manifests(dirs, exclude=True):
+    """All manifest_*.jsonl rows from the given directories (each row gets 'dir'). With exclude, training-side rows (never
+    test rows) listed by the leak guard (BASMA_EXCLUDE) are dropped."""
+    excl = load_exclude() if exclude else set()
     rows = []
     for d in dirs:
         for f in sorted(os.listdir(d)):
@@ -30,11 +41,15 @@ def load_manifests(dirs):
                         if line.strip():
                             r = json.loads(line); r["dir"] = d; rows.append(r)
     # drop content duplicates across plans (same id = same raw bytes)
-    seen, out = set(), []
+    seen, out, dropped = set(), [], 0
     for r in rows:
         if r["id"] in seen:
             continue
+        if r["id"] in excl and not r["split"].startswith("eval:"):
+            dropped += 1; continue
         seen.add(r["id"]); out.append(r)
+    if excl:
+        print(f"leak guard: {dropped} training-side rows excluded ({len(excl)} ids listed)", flush=True)
     return out
 
 

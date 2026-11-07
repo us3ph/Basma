@@ -30,4 +30,4 @@ R = "deepfakesMSU/NTIRE-RobustAIGenDetection-test-public"
 z = hf_hub_download(R, "test_images.zip", repo_type="dataset", local_dir="/tmp/ntire"); hf_hub_download(R, "test_labels.csv", repo_type="dataset", local_dir="/tmp/ntire")
 subprocess.run(["unzip", "-q", "-o", z, "-d", "/tmp/ntire/img"], check=True)
 PYN
-stamp "package";    tar czf /kaggle/working/basma_model.tgz "$OUT/best" "$OUT/report" $( [ -d "$OUT/ntire" ] && echo "$OUT/ntire" ) docs/RESULTS.md && ls -lh /kaggle/working/basma_model.tgz
+stamp "package";    tar czf /kaggle/working/basma_model.tgz "$OUT/best" "$OUT/report" $( [ -d "$OUT/ntire" ] && echo "$OUT/ntire" ) docs/RESULTS.md $( [ -f docs/LEAKGUARD.md ] && echo docs/LEAKGUARD.md ) && ls -lh /kaggle/working/basma_model.tgz

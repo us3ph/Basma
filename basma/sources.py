@@ -274,3 +274,34 @@ def cf_row_meta(row, col):
 def rapidata_row_meta(row, col):
     """Rapidata pairs: image1 <-> model1, image2 <-> model2."""
     return {"label": 1, "gen": row.get("model1") if col == "image1" else row.get("model2")}
+
+
+def sofake_row_meta(row, col):
+    """So-Fake-Set: only fully generated images. Its real photos include Open Images (a bench pool) and are skipped, as are
+    'tampered' (partly edited real photos) and face-swap / real-photo-edit generators."""
+    gen = row.get("generator") or ""
+    if row.get("label") != "full_synthetic" or gen in ("OpenForensics_fake", "Imagic", "None", ""):
+        return {"skip": True}
+    return {"label": 1, "gen": gen}
+
+
+def synthbuster_row_meta(row, col):
+    """Synthbuster+: 13 generators prompted from RAISE photos, plus those RAISE raw-camera photos (label 0)."""
+    src = row.get("source") or "unknown"
+    return {"label": 1, "gen": src} if int(row.get("label", 1)) == 1 else {"label": 0, "gen": f"real:{src}"}
+
+
+def openfake_row_meta(ai_only=False, max_nsfw=0.9):
+    """OpenFake: label 'fake'/'real', generator in 'model'. Real photos only from Reddit / Pexels (never LAION, whose web
+    crawl is close to NTIRE's real-photo sources); tiny random test models and very NSFW posts are skipped."""
+    def meta(row, col):
+        model, lab = str(row.get("model") or "unknown"), row.get("label")
+        if "tiny-random" in model.lower() or (row.get("nsfw_score") or 0) > max_nsfw:
+            return {"skip": True}
+        if lab == "fake":
+            frame = "video" in str(row.get("type") or "") and model.lower() == "reddit"
+            return {"label": 1, "gen": "reddit video frame" if frame else model, "extra": {"type": row.get("type")}}
+        if ai_only or model.lower() not in ("reddit", "pexels"):
+            return {"skip": True}
+        return {"label": 0, "gen": f"real:{model.lower()}", "extra": {"type": row.get("type")}}
+    return meta

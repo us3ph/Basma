@@ -16,6 +16,7 @@ import io
 import json
 import os
 import random
+import re
 import sys
 import tarfile
 import time
@@ -135,9 +136,22 @@ def load_prev(pattern):
     return ids, units
 
 
+# The NTIRE 2026 test stays unseen: its repos and the web datasets its real photos were drawn from (CC12M, DataComp
+# CommonPool, RedCaps; arXiv 2604.11487) are refused by every build. LAION reals are skipped too (openfake_row_meta).
+BLOCKED = re.compile(r"ntire|deepfakesmsu|cc12m|conceptual[-_ ]?12m|commonpool|datacomp|redcaps", re.I)
+
+
+def check_blocked(plan):
+    for src, _ in plan:
+        where = " ".join(str(x) for x in (src.name, getattr(src, "repo", ""), getattr(src, "zip_path", ""), getattr(src, "prefix", "")))
+        if BLOCKED.search(where):
+            raise ValueError(f"source {src.name} ({where}) is NTIRE data or one of its real-photo sources; refused")
+
+
 def build(plan_name, plan, out_dir, workers=4, seed=0, log=print, chunk=64):
     import queue
     import threading
+    check_blocked(plan)
     rng = random.Random(seed)
     os.makedirs(out_dir, exist_ok=True)
     writer = ShardWriter(out_dir, plan_name)
@@ -181,6 +195,8 @@ def build(plan_name, plan, out_dir, workers=4, seed=0, log=print, chunk=64):
                 todo = []
                 for raw, meta in items:
                     raw_bytes += len(raw)
+                    if meta.get("skip"):
+                        stats["rows_skipped"] += 1; continue
                     sha = hashlib.sha1(raw).hexdigest()
                     if sha in seen:
                         stats["dup"] += 1; continue
@@ -405,8 +421,65 @@ def plan_mini():
     ]
 
 
+def plan_v4a(scale=1.0):
+    """v4 additions, the kinds v3 misses (Basma Bench: ADM 3 %, Hourglass 2 %, GLIDE 27 %, DALL-E 2 37 %, Firefly 55-70 %,
+    text-to-image GANs 69-77 % called AI): pixel-space diffusion, GANs and older / non-latent generators.
+      * Synthbuster+: 13 generators (DALL-E 2/3, Firefly, GLIDE, Midjourney v5, SD 1.3-XL/3, Flux, Imagen 3) prompted from
+        RAISE raw-camera photos, plus those photos;
+      * So-Fake-Set: its fully generated images (~30 GANs and diffusion models); its real photos (Open Images = bench) are not used;
+      * ADM ImageNet-256 samples (openai guided-diffusion), DALL-E 2 portraits, Karlo (unCLIP) on Parti prompts."""
+    k = lambda n: max(1, int(n * scale))
+    sb = S.ParquetSource("synthbuster", "marco-willi/synthbuster-plus", [("image", None, None)], meta_cols=("label", "source"), row_meta=S.synthbuster_row_meta)
+    sf = S.ParquetSource("sofake", "saberzl/So-Fake-Set", [("image", None, None)], meta_cols=("label", "generator"), row_meta=S.sofake_row_meta)
+    return [
+        (sb, {"max_files": k(42), "max_images": k(15_000), **_fresh()}),
+        (sf, {"max_files": k(200), "rgs_per_file": 2, "max_images": k(26_000), "cap_per_gen": 2500, **_fresh()}),
+        (S.TarSource("adm", "Birchlabs/openai-guided-diffusion-256-classcond-unguided-samples-50k", 1, "adm-imagenet256", per_shard=1700), {"max_files": 5, "max_images": k(8000), **_fresh()}),
+        (S.HfFilesSource("dalle2_faces", "SDbiaseval/dalle2-faces", 1, "dalle2"), {"max_images": k(3000), **_fresh()}),
+        (S.ParquetSource("karlo", "diffusers-parti-prompts/karlo-v1", [("images", 1, "karlo-v1")]), {"max_images": k(1700), **_fresh()}),
+    ]
+
+
+def plan_v4b(scale=1.0):
+    """v4 additions, images as they circulate (WildRF Reddit AI images: 76 % called AI by v3): OpenFake's Civitai community
+    generations (incl. AI-video frames), Reddit posts from AI-generation subreddits and real photos from photography
+    subreddits, and a slice of its core set (fine-tunes / LoRAs of SD, SDXL, Flux; AI only, its LAION reals are not used)."""
+    k = lambda n: max(1, int(n * scale))
+    of = lambda name, prefix, ai_only, cols=("label", "model", "type"): S.ParquetSource(
+        name, "ComplexDataLab/OpenFake", [("image", None, None)], meta_cols=cols, row_meta=S.openfake_row_meta(ai_only=ai_only),
+        file_filter=lambda f: f.startswith(prefix))
+    return [
+        (of("of_civitai", "supplement/civitai/", True), {"max_files": k(20), "rgs_per_file": 6, "max_images": k(12_000), "cap_per_gen": 1500, **_fresh()}),
+        (of("of_reddit", "supplement/reddit/", False, ("label", "model", "type", "nsfw_score")),
+         {"max_files": k(16), "rgs_per_file": 8, "max_images": k(15_000), "cap_per_gen": 5000, **_fresh()}),
+        (of("of_core", "core/train-", True), {"max_files": k(20), "rgs_per_file": 3, "max_images": k(3500), "cap_per_gen": 300, **_fresh()}),
+    ]
+
+
+def plan_mini4():
+    """Local check of the v4 readers (one row group each)."""
+    one = {"max_files": 1, "rgs_per_file": 1}
+    sb = S.ParquetSource("synthbuster", "marco-willi/synthbuster-plus", [("image", None, None)], meta_cols=("label", "source"),
+                         row_meta=S.synthbuster_row_meta, files=["data/train-00006-of-00026.parquet", "data/train-00017-of-00026.parquet"])
+    sf = S.ParquetSource("sofake", "saberzl/So-Fake-Set", [("image", None, None)], meta_cols=("label", "generator"), row_meta=S.sofake_row_meta,
+                         files=["data/train-00000-of-02343.parquet"])
+    of = lambda name, f, ai_only, cols=("label", "model", "type"): S.ParquetSource(
+        name, "ComplexDataLab/OpenFake", [("image", None, None)], meta_cols=cols, row_meta=S.openfake_row_meta(ai_only=ai_only), files=[f])
+    return [
+        (sb, {"max_files": 2, "rgs_per_file": 1, "max_images": 12, "cap_per_gen": 6, **_fresh()}),
+        (sf, {**one, "max_images": 20, **_fresh()}),
+        (S.TarSource("adm", "Birchlabs/openai-guided-diffusion-256-classcond-unguided-samples-50k", 1, "adm-imagenet256", per_shard=6), {"max_files": 1, "max_images": 6, **_fresh()}),
+        (S.HfFilesSource("dalle2_faces", "SDbiaseval/dalle2-faces", 1, "dalle2"), {"max_images": 6, **_fresh()}),
+        (S.ParquetSource("karlo", "diffusers-parti-prompts/karlo-v1", [("images", 1, "karlo-v1")]), {**one, "max_images": 6, **_fresh()}),
+        (of("of_civitai", "supplement/civitai/2026-11/supplement_civitai-2026-11-00000.parquet", True), {**one, "max_images": 12, **_fresh()}),
+        (of("of_reddit", "supplement/reddit/2026-11/supplement_reddit-2026-11-00005.parquet", False, ("label", "model", "type", "nsfw_score")), {**one, "max_images": 8, **_fresh()}),
+        (of("of_core", "core/train-00000-of-00032-00000.parquet", True), {**one, "max_images": 12, **_fresh()}),
+    ]
+
+
 PLANS = {"cf": plan_cf, "recent": plan_recent, "reals": plan_reals, "eval": plan_eval, "v3ai": plan_v3ai, "v3real": plan_v3real,
-         "mini": lambda scale=1.0: plan_mini(), "mini3": lambda scale=1.0: plan_mini3()}
+         "v4a": plan_v4a, "v4b": plan_v4b,
+         "mini": lambda scale=1.0: plan_mini(), "mini3": lambda scale=1.0: plan_mini3(), "mini4": lambda scale=1.0: plan_mini4()}
 
 
 def main():
