@@ -22,9 +22,18 @@ function clearResult() { $("verdict").innerHTML = ""; $("count").textContent = "
 const progress = (frac) => { $("barfill").style.width = `${Math.round(100 * frac)}%`; };
 function checking() { const el = $("status"); el.classList.remove("stagger", "off"); el.innerHTML = '<span class="spin" aria-hidden="true"></span>Checking'; }
 
+// The downloaded model is stored under a name taken from the fusion.json it ships with, so a new version (new thresholds)
+// always gets its own model instead of an older one stored for the same address; older stores are deleted.
+let cacheName = "basma-v1";
+const fnv = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193); return (h >>> 0).toString(36); };
+async function useCacheFor(text) {
+  cacheName = `basma-${fnv(text)}`;
+  try { for (const k of await caches.keys()) if (k.startsWith("basma-") && k !== cacheName) await caches.delete(k); } catch (_) { /* no Cache API */ }
+}
+
 async function fetchWithProgress(url, label) {
   let cache = null;
-  try { cache = await caches.open("basma-v1"); const hit = await cache.match(url); if (hit) { status("Loading the detection model…"); return await hit.arrayBuffer(); } } catch (_) { /* no Cache API */ }
+  try { cache = await caches.open(cacheName); const hit = await cache.match(url); if (hit) { status("Loading the detection model…"); return await hit.arrayBuffer(); } } catch (_) { /* no Cache API */ }
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${label}: HTTP ${res.status}`);
   const total = Number(res.headers.get("content-length")) || 0;
@@ -39,7 +48,6 @@ async function fetchWithProgress(url, label) {
   try { if (cache) await cache.put(url, new Response(buf.buffer.slice(0), { headers: { "content-type": "application/octet-stream" } })); } catch (_) { /* quota */ }
   return buf.buffer;
 }
-async function loadJSON(p) { const r = await fetch(p); if (!r.ok) throw new Error(`${p}: HTTP ${r.status}`); return r.json(); }
 
 let fusion = null, session = null, worker = null, seq = 0, current = null, modelReady = false;
 const pending = new Map();
@@ -68,7 +76,8 @@ async function runModel(views, n) {
 async function init() {
   try {
     status("Preparing the detector…"); progress(0.03);
-    fusion = createFusion(await loadJSON("./assets/fusion.json"));
+    const fr = await fetch("./assets/fusion.json"); if (!fr.ok) throw new Error(`./assets/fusion.json: HTTP ${fr.status}`);
+    const ftext = await fr.text(); fusion = createFusion(JSON.parse(ftext)); await useCacheFor(ftext);
     let lastErr = null, ready = null;
     startWorker();
     for (const cand of MODEL_CANDIDATES) {
