@@ -20,6 +20,8 @@ Pipeline: `build_data` (stream sources -> normalised JPEG shards) -> `train` (DI
 
 ## Results (v2, 2026-11-05)
 
+The website runs **v3** since 2026-11-07 (fewer real photos called AI: 0.7 % instead of 2.0 % on held-out photos, 8.0 % instead of 20.7 % on NTIRE clean photos; full comparison on [Basma Bench](docs/BENCH.md), v3 tables in [docs/RESULTS.md](docs/RESULTS.md)). The section below describes v2.
+
 Scored on 92,000 held-out rows (images x 10 attack conditions: JPEG, WebP, resize, screenshot, social-media pipeline,
 colour edit, blur/noise, crop, combinations) from pools never trained on: Community Forensics Eval, GenImage, WildRF
 (Reddit/Facebook/Twitter), unseen commercial generators (Seedream, Hunyuan, Recraft, Reve, Grok/Aurora, Qwen, MAI,
