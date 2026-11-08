@@ -1,0 +1,80 @@
+# Leak guard
+
+353,131 training-side images (train, val, calib) compared with 25,159 test images (Basma Bench held-out pools + 2,500 NTIRE public test images).
+
+**Excluded from training: 237** (19 near-identical, the rest very similar).
+
+| Training source (split) ~ test pool | Excluded | Near-identical |
+|---|---|---|
+| rd_bench2026 (train) ~ bench:unseen_vendors | 61 | 1 |
+| stylegan2_faces (train) ~ bench:cf_eval | 28 | 0 |
+| synthbuster (train) ~ bench:cf_eval | 16 | 16 |
+| sofake (train) ~ bench:cf_eval | 14 | 0 |
+| cf_small_real (train) ~ bench:cf_eval | 13 | 0 |
+| fashion (train) ~ ntire | 8 | 0 |
+| cf_small_ai (train) ~ bench:cf_eval | 5 | 0 |
+| fashion (train) ~ bench:genimage | 5 | 0 |
+| cf_small_ai (train) ~ bench:unseen_vendors | 4 | 0 |
+| fashion (train) ~ bench:unseen_vendors | 4 | 0 |
+| rd_hidream (train) ~ bench:unseen_vendors | 3 | 0 |
+| cc3m_v3 (train) ~ bench:unseen_vendors | 3 | 0 |
+| cf_small_ai (train) ~ bench:genimage | 2 | 0 |
+| cc3m (train) ~ bench:unseen_vendors | 2 | 0 |
+| cc3m (train) ~ bench:genimage | 2 | 0 |
+| pexels_more (train) ~ bench:unseen_vendors | 2 | 0 |
+| vct2 (train) ~ bench:cf_eval | 2 | 0 |
+| fashion (train) ~ bench:cf_eval | 2 | 0 |
+| rd_bench2026 (train) ~ bench:cf_eval | 2 | 0 |
+| rd_bench2026 (train) ~ bench:genimage | 2 | 0 |
+| stylegan2_faces (val) ~ bench:cf_eval | 2 | 0 |
+| cc3m_v3 (train) ~ bench:cf_eval | 2 | 0 |
+| sofake (val) ~ bench:cf_eval | 2 | 0 |
+| sofake (train) ~ ntire | 2 | 0 |
+| of_reddit (train) ~ bench:unseen_vendors | 2 | 0 |
+| cf_small_ai (train) ~ bench:real_openimages | 1 | 0 |
+| cf_small_ai (val) ~ bench:unseen_vendors | 1 | 0 |
+| cf_small_ai (train) ~ bench:wildrf | 1 | 0 |
+| cf_small_real (val) ~ bench:cf_eval | 1 | 0 |
+| cf_small_real (train) ~ ntire | 1 | 0 |
+| cf_small_real (train) ~ bench:unseen_vendors | 1 | 0 |
+| cf_small_real (val) ~ bench:genimage | 1 | 0 |
+| cf_small_real (train) ~ bench:wildrf | 1 | 0 |
+| rd_seedream3 (train) ~ bench:cf_eval | 1 | 0 |
+| rd_seedream3 (train) ~ bench:genimage | 1 | 0 |
+| rd_hunyuan21 (train) ~ bench:wildrf | 1 | 0 |
+| rd_recraft3 (train) ~ bench:unseen_vendors | 1 | 0 |
+| rd_aurora (train) ~ bench:wildrf | 1 | 0 |
+| rd_aurora (train) ~ bench:unseen_vendors | 1 | 0 |
+| cc3m (val) ~ bench:unseen_vendors | 1 | 0 |
+| cc3m (train) ~ bench:cf_eval | 1 | 0 |
+| pexels_more (train) ~ bench:cf_eval | 1 | 0 |
+| rd_flux2pro (train) ~ bench:unseen_vendors | 1 | 0 |
+| rd_4o (train) ~ bench:unseen_vendors | 1 | 0 |
+| rd_imagen4u (train) ~ bench:unseen_vendors | 1 | 0 |
+| rd_hidream (train) ~ bench:cf_eval | 1 | 0 |
+| rd_frames (train) ~ bench:unseen_vendors | 1 | 0 |
+| rd_faces (train) ~ bench:unseen_vendors | 1 | 0 |
+| rd_fluxsd3mj (val) ~ bench:unseen_vendors | 1 | 0 |
+| rd_bench2026 (train) ~ bench:wildrf | 1 | 0 |
+| rd_bench2026 (val) ~ bench:unseen_vendors | 1 | 0 |
+| gpt_imgeval (train) ~ bench:genimage | 1 | 0 |
+| open_image_prefs (train) ~ bench:wildrf | 1 | 0 |
+| open_image_prefs (train) ~ ntire | 1 | 0 |
+| open_image_prefs (train) ~ bench:genimage | 1 | 0 |
+| coco (train) ~ bench:cf_eval | 1 | 0 |
+| flickr30k (train) ~ bench:real_openimages | 1 | 1 |
+| fashion (val) ~ ntire | 1 | 0 |
+| cf_small_ai (train) ~ ntire | 1 | 0 |
+| cf_small_ai (val) ~ bench:genimage | 1 | 0 |
+| rd_4o (train) ~ bench:cf_eval | 1 | 0 |
+| stylegan2_faces (val) ~ bench:genimage | 1 | 0 |
+| cars (val) ~ bench:unseen_vendors | 1 | 0 |
+| pets (train) ~ bench:unseen_vendors | 1 | 0 |
+| pexels_v3 (train) ~ bench:real_openimages | 1 | 0 |
+| pexels_v3 (train) ~ bench:cf_eval | 1 | 0 |
+| synthbuster (val) ~ bench:cf_eval | 1 | 1 |
+| synthbuster (train) ~ bench:unseen_vendors | 1 | 0 |
+| of_civitai (val) ~ bench:cf_eval | 1 | 0 |
+| of_reddit (train) ~ bench:cf_eval | 1 | 0 |
+| of_core (train) ~ bench:genimage | 1 | 0 |
+| of_reddit (train) ~ bench:genimage | 1 | 0 |
