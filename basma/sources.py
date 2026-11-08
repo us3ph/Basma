@@ -2,10 +2,12 @@
 
 A source lists *units* (a parquet row group, a chunk of zip members, a chunk of files, one arrow shard) and reads
 one unit at a time into (raw_bytes, meta) items, so a data build downloads only what it keeps."""
+import collections
 import io
 import os
 import json
 import random
+import re
 import subprocess
 import tarfile
 import threading
@@ -304,4 +306,42 @@ def openfake_row_meta(ai_only=False, max_nsfw=0.9):
         if ai_only or model.lower() not in ("reddit", "pexels"):
             return {"skip": True}
         return {"label": 0, "gen": f"real:{model.lower()}", "extra": {"type": row.get("type")}}
+    return meta
+
+
+def openfake21_row_meta(kind, max_nsfw=0.9, max_frames=2, skip_sources=("relaion", "laion")):
+    """OpenFake v2.1 supplement (added 2026-11; kind: civitai | reddit | t2i | edit).
+    * video frames: at most max_frames per video (Civitai source_media_id, Reddit post), consecutive frames are near copies;
+    * Civitai: dropped when its base model belongs to a held-out bench vendor (the model name alone can be a fine-tune);
+    * edits: the AI edit is label 1 in family "edit:<family>", its untouched source photo label 0. Pairs whose source
+      photo comes from (Re)LAION are skipped, like OpenFake's LAION reals (web crawl close to NTIRE's real-photo sources);
+    * real photos only from Reddit photography subreddits and edit sources (COCO, FFHQ, YFCC)."""
+    from .generators import canon, is_holdout
+    frames = collections.Counter()
+    def meta(row, col):
+        if (row.get("nsfw_score") or 0) > max_nsfw:
+            return {"skip": True}
+        model, typ = str(row.get("model") or "unknown"), str(row.get("type") or "")
+        if kind == "edit":
+            src = str(row.get("source_dataset") or "unknown").lower()
+            if any(k in src for k in skip_sources):
+                return {"skip": True}
+            key = next((k for k in ("coco", "ffhq", "yfcc") if k in src), re.sub(r"[^a-z0-9]+", "-", src).strip("-"))
+            if col == "source_image":
+                return {"label": 0, "gen": f"real:{key}", "family": f"real:edit-source-{key}", "extra": {"type": "edit_source", "sample_id": row.get("sample_id")}}
+            return {"label": 1, "gen": model, "family_prefix": "edit:", "extra": {"type": "image_edit", "edit_family": row.get("edit_family"),
+                    "edit_type": row.get("edit_type"), "source": key, "sample_id": row.get("sample_id")}}
+        if "video" in typ:
+            vid = row.get("source_media_id") or row.get("reddit_id") or row.get("row_id")
+            frames[vid] += 1
+            if frames[vid] > max_frames:
+                return {"skip": True}
+        if row.get("label") == "fake":
+            if kind == "civitai" and is_holdout(canon(str(row.get("base_model") or ""))[1]):
+                return {"skip": True}
+            gen = "reddit video frame" if kind == "reddit" and "video" in typ else model
+            return {"label": 1, "gen": gen, "extra": {"type": typ, "base_model": row.get("base_model")}}
+        if kind == "reddit" and model.lower() == "reddit":
+            return {"label": 0, "gen": "real:reddit", "family": "real:of_reddit", "extra": {"type": typ, "subreddit": row.get("subreddit")}}
+        return {"skip": True}
     return meta

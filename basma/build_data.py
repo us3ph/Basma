@@ -209,8 +209,9 @@ def build(plan_name, plan, out_dir, workers=4, seed=0, log=print, chunk=64):
                             stats["holdout_dropped"] += 1; continue
                         if src.family_override and not is_holdout(family):
                             family = src.family_override
+                        family = meta.get("family_prefix", "") + family          # e.g. edit:flux, AI edits of real photos
                     else:
-                        gen, family, vendor = str(meta["gen"] or f"real:{src.name}"), (src.family_override or f"real:{src.name}"), "real"
+                        gen, family, vendor = str(meta["gen"] or f"real:{src.name}"), (meta.get("family") or src.family_override or f"real:{src.name}"), "real"
                     gkey = f"{label}:{gen}"                                   # caps are per (label, generator)
                     if n_gen[gkey] >= cap_gen or n_label[label] >= cap_label.get(label, 10 ** 9):
                         stats["capped"] += 1; continue
@@ -477,7 +478,41 @@ def plan_mini4():
     ]
 
 
-PLANS = {"cf": plan_cf, "recent": plan_recent, "reals": plan_reals, "eval": plan_eval, "v3ai": plan_v3ai, "v3real": plan_v3real,
+OF21_COLS = {"civitai": ("label", "model", "type", "row_id", "base_model", "source_media_id", "nsfw_score"),
+             "reddit": ("label", "model", "type", "row_id", "reddit_id", "subreddit", "nsfw_score"),
+             "t2i": ("label", "model", "type", "row_id"),
+             "edit": ("label", "model", "type", "row_id", "source_dataset", "edit_family", "edit_type", "sample_id")}
+
+
+def _of21_source(kind, files):
+    imgs = [("image", None, None), ("source_image", None, None)] if kind == "edit" else [("image", None, None)]
+    return S.ParquetSource(f"of21_{kind}", "ComplexDataLab/OpenFake", imgs, meta_cols=OF21_COLS[kind], files=files, row_meta=S.openfake21_row_meta(kind))
+
+
+def plan_v5(part, scale=1.0):
+    """v5 additions: OpenFake v2.1 supplement only (published 2026-11-05: Civitai, Reddit, new text-to-image models and
+    instruction edits of real photos with their source photos), split into 5 parts of ~105 GB (basma/openfake21_files.json),
+    one Kaggle CPU kernel each. Every row group of the part is read; row groups v4 read (of_civitai, of_reddit) are skipped.
+    Caps are per part (x5 overall); bench vendors are dropped as always."""
+    files = json.load(open(os.path.join(os.path.dirname(__file__), "openfake21_files.json")))["parts"][part]["files"]
+    k = lambda n: max(1, int(n * scale))
+    budget = {"t2i": {"cap_per_gen": k(2500), **_fresh()}, "civitai": {"cap_per_gen": k(2500), **_fresh("of_civitai")},
+              "reddit": {"cap_per_gen": k(10_000), **_fresh("of_reddit")}, "edit": {"cap_per_gen": k(10_000), **_fresh()}}
+    return [(_of21_source(kind, files[kind]), budget[kind]) for kind in ("t2i", "civitai", "reddit", "edit") if kind in files]
+
+
+def plan_mini5():
+    """Local check of the v5 readers: one row group of one file per OpenFake v2.1 folder."""
+    files = json.load(open(os.path.join(os.path.dirname(__file__), "openfake21_files.json")))["parts"]
+    one = {"max_files": 1, "rgs_per_file": 1, "drop_holdout": True}
+    pick = {kind: [next(p["files"][kind][0] for p in files.values() if kind in p["files"])] for kind in ("t2i", "civitai", "reddit", "edit")}
+    return [(_of21_source(kind, pick[kind]), one) for kind in ("t2i", "civitai", "reddit", "edit")]
+
+
+PLANS = {"v5a": lambda scale=1.0: plan_v5("a", scale), "v5b": lambda scale=1.0: plan_v5("b", scale),
+         "v5c": lambda scale=1.0: plan_v5("c", scale), "v5d": lambda scale=1.0: plan_v5("d", scale),
+         "v5e": lambda scale=1.0: plan_v5("e", scale), "mini5": lambda scale=1.0: plan_mini5(),
+         "cf": plan_cf, "recent": plan_recent, "reals": plan_reals, "eval": plan_eval, "v3ai": plan_v3ai, "v3real": plan_v3real,
          "v4a": plan_v4a, "v4b": plan_v4b,
          "mini": lambda scale=1.0: plan_mini(), "mini3": lambda scale=1.0: plan_mini3(), "mini4": lambda scale=1.0: plan_mini4()}
 

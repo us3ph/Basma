@@ -3,6 +3,8 @@ import io
 import glob
 import json
 import os
+import pickle
+import shutil
 import tarfile
 import zlib
 
@@ -53,24 +55,67 @@ def load_manifests(dirs, exclude=True):
     return out
 
 
+_TAR_INDEX = {}      # img_root -> {member: (shard path, byte offset, size)} when shards are read in place
+
+
+def _shards(dirs):
+    """Tar shards of each data dir; they may sit in <dir>/shards/ or directly in <dir> (Kaggle kernel outputs)."""
+    return [os.path.join(sd, f) for d in dirs for sd in (os.path.join(d, "shards"), d) if os.path.isdir(sd) for f in sorted(os.listdir(sd)) if f.endswith(".tar")]
+
+
 def extract_all(dirs, img_root, log=print):
-    """Extract every tar shard into img_root/<id>.jpg (skips shards already extracted)."""
+    """Make every image readable from img_root. When the disk has room, extract the shards into img_root/<id>.jpg (skips
+    shards already extracted); otherwise index them and read each image straight from its shard (no extra disk).
+    BASMA_IMG_MODE=extract|index forces one."""
     os.makedirs(img_root, exist_ok=True)
-    done_f = os.path.join(img_root, ".extracted")
+    shards = _shards(dirs)
+    done_f, idx_f = os.path.join(img_root, ".extracted"), os.path.join(img_root, ".tarindex.pkl")
     done = set(open(done_f).read().split()) if os.path.exists(done_f) else set()
-    n = 0
-    for d in dirs:
-        cands = [os.path.join(sd, f) for sd in (os.path.join(d, "shards"), d) if os.path.isdir(sd) for f in sorted(os.listdir(sd)) if f.endswith(".tar")]
-        for path in cands:                      # shards may sit in <dir>/shards/ or directly in <dir> (Kaggle kernel outputs)
-            f = os.path.basename(path)
-            if f in done:
-                continue
+    todo = [p for p in shards if os.path.basename(p) not in done]
+    mode = os.environ.get("BASMA_IMG_MODE", "auto")
+    if mode == "auto":
+        need, free = sum(os.path.getsize(p) for p in todo) * 1.05 + 8e9, shutil.disk_usage(img_root).free
+        mode = "extract" if not todo or free > need else "index"
+        log(f"images: {len(todo)} of {len(shards)} shards to unpack need {need / 1e9:.0f} GB, {free / 1e9:.0f} GB free -> {mode}")
+    if mode == "index":
+        idx = {}
+        for path in shards:
             with tarfile.open(path) as t:
-                t.extractall(img_root, filter="data") if hasattr(tarfile, "data_filter") else t.extractall(img_root)
-            done.add(f); n += 1
-            with open(done_f, "w") as fh:
-                fh.write("\n".join(sorted(done)))
+                for ti in t:
+                    if ti.isfile():
+                        idx[ti.name] = (path, ti.offset_data, ti.size)
+        with open(idx_f, "wb") as fh:
+            pickle.dump(idx, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        _TAR_INDEX[img_root] = idx
+        log(f"indexed {len(idx)} images in {len(shards)} shards (read in place)")
+        return
+    if os.path.exists(idx_f):
+        os.remove(idx_f)
+    _TAR_INDEX[img_root] = {}
+    n = 0
+    for path in todo:
+        with tarfile.open(path) as t:
+            t.extractall(img_root, filter="data") if hasattr(tarfile, "data_filter") else t.extractall(img_root)
+        done.add(os.path.basename(path)); n += 1
+        with open(done_f, "w") as fh:
+            fh.write("\n".join(sorted(done)))
     log(f"extracted {n} new shards into {img_root}")
+
+
+def open_image(row, img_root):
+    """PIL image of a manifest row: the extracted file, or its bytes read from the tar shard when shards are indexed."""
+    rel = row["member"] if "member" in row else row["id"] + ".jpg"
+    idx = _TAR_INDEX.get(img_root)
+    if idx is None:                              # another process (score, baselines, DataLoader worker after spawn)
+        idx_f = os.path.join(img_root, ".tarindex.pkl")
+        idx = _TAR_INDEX[img_root] = pickle.load(open(idx_f, "rb")) if os.path.exists(idx_f) else {}
+    hit = idx.get(rel)
+    if hit is None:
+        return Image.open(os.path.join(img_root, rel))
+    path, off, size = hit
+    with open(path, "rb") as fh:
+        fh.seek(off)
+        return Image.open(io.BytesIO(fh.read(size)))
 
 
 def path_of(row, img_root):
@@ -107,7 +152,7 @@ class TrainDataset(Dataset):
         r = self.rows[i]
         rng = np.random.default_rng((self.seed * 1_000_003 + self.epoch * 7919 + i) & 0xFFFFFFFF)
         try:
-            img = Image.open(path_of(r, self.img_root)).convert("RGB")
+            img = open_image(r, self.img_root).convert("RGB")
         except Exception:  # noqa: BLE001
             img = Image.new("RGB", (256, 256), (128, 128, 128))
         img, bucket = attack_train(img, rng, self.buckets)
@@ -136,7 +181,7 @@ class EvalDataset(Dataset):
     def __getitem__(self, i):
         r = self.rows[i]
         try:
-            img = Image.open(path_of(r, self.img_root)).convert("RGB")
+            img = open_image(r, self.img_root).convert("RGB")
         except Exception:  # noqa: BLE001
             img = Image.new("RGB", (256, 256), (128, 128, 128))
         img = attack_eval(img, self.cond, eval_seed(r["id"], self.cond))

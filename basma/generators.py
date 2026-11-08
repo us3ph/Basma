@@ -51,6 +51,9 @@ _RULES = [  # (regex on the lower-cased name, family, vendor)
     (r"chroma", "chroma", "lodestones"),
     (r"bria", "bria", "bria"),
     (r"kolors", "kolors", "kuaishou"),
+    (r"krea", "krea", "krea"),                       # Krea 2 (FLUX.1-Krea-dev is caught by the flux rule above)
+    (r"longcat", "longcat", "meituan"),
+    (r"joyai", "joyai", "jd"),
 ]
 
 

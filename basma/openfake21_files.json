@@ -1,0 +1,307 @@
+{
+ "repo": "ComplexDataLab/OpenFake",
+ "revision_note": "v2.1 supplement, added 2026-11-05 (folders supplement/<config>/2026-11)",
+ "parts": {
+  "a": {
+   "bytes": 105219762407,
+   "files": {
+    "civitai": [
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00001.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00010.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00012.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00025.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00027.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00028.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00040.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00047.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00048.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00054.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00055.parquet"
+    ],
+    "edit": [
+     "supplement/edit/2026-11/supplement_edit-2026-11-00005.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00008.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00025.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00028.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00033.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00034.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00035.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00036.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00038.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00039.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00043.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00046.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00055.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00057.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00066.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00067.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00068.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00078.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00082.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00083.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00087.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00088.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00092.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00098.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00101.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00109.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00110.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00112.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00115.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00117.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00127.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00139.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00140.parquet"
+    ],
+    "t2i": [
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00000.parquet",
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00003.parquet"
+    ],
+    "reddit": [
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00025.parquet"
+    ]
+   }
+  },
+  "b": {
+   "bytes": 105030150152,
+   "files": {
+    "civitai": [
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00006.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00007.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00009.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00013.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00017.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00018.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00022.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00026.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00030.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00035.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00038.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00043.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00053.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00057.parquet"
+    ],
+    "edit": [
+     "supplement/edit/2026-11/supplement_edit-2026-11-00007.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00009.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00010.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00021.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00022.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00023.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00027.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00030.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00032.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00042.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00054.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00058.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00059.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00069.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00071.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00080.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00090.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00094.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00096.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00100.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00102.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00103.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00104.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00111.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00119.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00126.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00136.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00137.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00142.parquet"
+    ],
+    "reddit": [
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00014.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00018.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00023.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00026.parquet"
+    ],
+    "t2i": [
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00006.parquet"
+    ]
+   }
+  },
+  "c": {
+   "bytes": 106146022667,
+   "files": {
+    "civitai": [
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00002.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00004.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00008.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00015.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00019.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00021.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00033.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00041.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00044.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00045.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00046.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00050.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00051.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00052.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00056.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00058.parquet"
+    ],
+    "edit": [
+     "supplement/edit/2026-11/supplement_edit-2026-11-00003.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00006.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00013.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00014.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00016.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00017.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00019.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00029.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00040.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00052.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00061.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00064.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00076.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00084.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00120.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00124.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00125.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00130.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00132.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00133.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00134.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00135.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00141.parquet"
+    ],
+    "reddit": [
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00009.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00010.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00011.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00015.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00016.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00017.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00019.parquet"
+    ],
+    "t2i": [
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00001.parquet",
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00007.parquet"
+    ]
+   }
+  },
+  "d": {
+   "bytes": 104995306166,
+   "files": {
+    "edit": [
+     "supplement/edit/2026-11/supplement_edit-2026-11-00002.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00012.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00018.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00024.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00026.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00031.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00037.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00044.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00045.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00048.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00056.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00060.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00062.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00063.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00065.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00070.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00072.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00075.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00079.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00081.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00091.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00099.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00105.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00106.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00107.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00108.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00113.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00121.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00123.parquet"
+    ],
+    "reddit": [
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00000.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00001.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00002.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00003.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00007.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00008.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00013.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00020.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00021.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00022.parquet"
+    ],
+    "civitai": [
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00011.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00016.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00032.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00036.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00042.parquet"
+    ],
+    "t2i": [
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00002.parquet",
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00004.parquet",
+     "supplement/t2i/2026-11/supplement_t2i-2026-11-00005.parquet"
+    ]
+   }
+  },
+  "e": {
+   "bytes": 105031419289,
+   "files": {
+    "edit": [
+     "supplement/edit/2026-11/supplement_edit-2026-11-00000.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00001.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00004.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00011.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00015.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00020.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00041.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00047.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00049.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00050.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00051.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00053.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00073.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00074.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00077.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00085.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00086.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00089.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00093.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00095.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00097.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00114.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00116.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00118.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00122.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00128.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00129.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00131.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00138.parquet",
+     "supplement/edit/2026-11/supplement_edit-2026-11-00143.parquet"
+    ],
+    "civitai": [
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00000.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00003.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00005.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00014.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00020.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00023.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00024.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00029.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00031.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00034.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00037.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00039.parquet",
+     "supplement/civitai/2026-11/supplement_civitai-2026-11-00049.parquet"
+    ],
+    "reddit": [
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00004.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00005.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00006.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00012.parquet",
+     "supplement/reddit/2026-11/supplement_reddit-2026-11-00024.parquet"
+    ]
+   }
+  }
+ }
+}

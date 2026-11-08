@@ -1,0 +1,29 @@
+{
+ "id": "joseph423242/basma-leak-guard-v5",
+ "title": "Basma leak guard v5",
+ "code_file": "basma_leakguard_v5.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "dataset_sources": [],
+ "competition_sources": [],
+ "kernel_sources": [
+  "joseph423242/basma-data-cf-half",
+  "joseph423242/basma-data-recent-half",
+  "joseph423242/basma-data-reals",
+  "joseph423242/basma-data-eval-half",
+  "joseph423242/basma-data-v3ai",
+  "joseph423242/basma-data-v3real",
+  "joseph423242/basma-data-v4a",
+  "joseph423242/basma-data-v4b",
+  "joseph423242/basma-data-v5a",
+  "joseph423242/basma-data-v5b",
+  "joseph423242/basma-data-v5c",
+  "joseph423242/basma-data-v5d",
+  "joseph423242/basma-data-v5e"
+ ],
+ "model_sources": []
+}

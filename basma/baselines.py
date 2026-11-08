@@ -17,7 +17,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
 from .attacks import EVAL_CONDITIONS
-from .data import eval_seed, extract_all, load_manifests, path_of
+from .data import eval_seed, extract_all, load_manifests, open_image, path_of
 from .attacks import attack_eval
 from .score import select_rows
 
@@ -43,7 +43,7 @@ class CondDataset(Dataset):
     def __getitem__(self, i):
         r = self.rows[i]
         try:
-            img = Image.open(path_of(r, self.img_root)).convert("RGB")
+            img = open_image(r, self.img_root).convert("RGB")
         except Exception:  # noqa: BLE001
             img = Image.new("RGB", (256, 256), (128, 128, 128))
         img = attack_eval(img, self.cond, eval_seed(r["id"], self.cond))
