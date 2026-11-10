@@ -20,7 +20,7 @@ Pipeline: `build_data` (stream sources -> normalised JPEG shards) -> `train` (DI
 
 ## Results (v2, 2026-11-05)
 
-The website runs **v4** since 2026-11-08: on the held-out bench it answers AI for 89.4 % of AI images (v2 83.7 %), calls only 4.4 % of them Real (v2 12.3 %) and 0.9 % of real photos AI (v2 2.0 %); ranking quality (AUROC) 0.990 (v2 0.964). Every version on [Basma Bench](docs/BENCH.md), v4 tables in [docs/RESULTS.md](docs/RESULTS.md), how test images are kept out of training in [docs/LEAKGUARD.md](docs/LEAKGUARD.md). The section below describes v2.
+The website runs **v5** since 2026-11-10 (adds OpenFake v2.1: recent Civitai / Reddit images, new generators and AI edits of real photos). On the held-out bench it answers AI for 89.6 % of AI images and calls only 2.3 % of them Real (v2 12.3 %); 1.2 % of real photos are called AI and hard cases are answered Uncertain. NTIRE AUROC 0.975 clean / 0.783 distorted. Every version on [Basma Bench](docs/BENCH.md), v5 tables in [docs/RESULTS.md](docs/RESULTS.md), how test images are kept out of training in [docs/LEAKGUARD.md](docs/LEAKGUARD.md). The section below describes v2.
 
 Scored on 92,000 held-out rows (images x 10 attack conditions: JPEG, WebP, resize, screenshot, social-media pipeline,
 colour edit, blur/noise, crop, combinations) from pools never trained on: Community Forensics Eval, GenImage, WildRF
