@@ -69,7 +69,18 @@ def load_manifests(dirs, exclude=True):
     if excl:
         print(f"leak guard: {dropped} training-side rows excluded ({len(excl)} ids listed)", flush=True)
     if native:
-        print(f"native windows: {sum(1 for r in out if 'native' in r)} of {len(out)} rows have original-pixel windows", flush=True)
+        # v6 rule: a training-side image whose original is larger than the overview must have its native window (its
+        # source still serves the same bytes); otherwise it is left out rather than trained on in low detail. Test and
+        # calibration rows are kept as they are (they only measure or set thresholds).
+        keep, gone = [], 0
+        for r in out:
+            big = max(int(r.get("orig_w") or 0), int(r.get("orig_h") or 0)) > 512
+            if big and "native" not in r and not r["split"].startswith("eval:") and r["split"] != "calib":
+                gone += 1; continue
+            keep.append(r)
+        out = keep
+        print(f"native windows: {sum(1 for r in out if 'native' in r)} of {len(out)} rows have original-pixel windows; "
+              f"{gone} training-side rows without one (source changed or vanished) left out", flush=True)
     return out
 
 
