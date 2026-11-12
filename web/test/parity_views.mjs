@@ -7,7 +7,8 @@ for (const v of vecs) {
   const data = new Uint8Array(Buffer.from(v.pixels_b64, "base64"));
   const base = toBase({ data, h: v.h, w: v.w });
   const bsha = createHash("sha1").update(Buffer.from(base.data.buffer, base.data.byteOffset, base.data.length)).digest("hex");
-  const { views, n } = inferenceViews(base);
+  const img = { data, h: v.h, w: v.w };
+  const { views, n } = inferenceViews(base, (base.h !== img.h || base.w !== img.w) ? img : null);
   const vsha = createHash("sha1").update(Buffer.from(views.buffer)).digest("hex");
   let sum = 0; for (let i = 0; i < views.length; i++) sum += views[i];
   const same = bsha === v.base_sha && vsha === v.views_sha && n === v.n_views;

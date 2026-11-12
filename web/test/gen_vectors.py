@@ -12,7 +12,7 @@ for p in sorted(glob.glob("/home/x-hunter/Basma/data/img/*.jpg"))[:3]:
     imgs[p.split("/")[-1]] = np.asarray(Image.open(p).convert("RGB"))
 out = []
 for name, img in imgs.items():
-    base = to_base(img); views, info = inference_views(base)
+    base = to_base(img); views, info = inference_views(base, img if img.shape != base.shape else None)   # v6: crops from the image's own pixels
     out.append({"name": name, "h": img.shape[0], "w": img.shape[1], "pixels_b64": __import__("base64").b64encode(img.tobytes()).decode(),
                 "base_h": base.shape[0], "base_w": base.shape[1], "base_sha": hashlib.sha1(base.tobytes()).hexdigest(),
                 "n_views": int(views.shape[0]), "views_sha": hashlib.sha1(views.tobytes()).hexdigest(), "views_sum": float(views.astype(np.float64).sum()),

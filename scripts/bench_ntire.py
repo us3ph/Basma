@@ -51,7 +51,8 @@ class BasmaFiles(Dataset):
         return len(self.paths)
 
     def __getitem__(self, i):
-        views, info = inference_views(to_base(np.asarray(open_rgb(self.paths[i]))))
+        arr = np.asarray(open_rgb(self.paths[i])); base = to_base(arr)
+        views, info = inference_views(base, arr if arr.shape != base.shape else None)   # v6: crops from the image's own pixels
         x = torch.zeros(MAX_VIEWS, 3, views.shape[2], views.shape[3]); x[:views.shape[0]] = torch.from_numpy(views)
         return x, views.shape[0], i, info["h"], info["w"]
 

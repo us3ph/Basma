@@ -129,7 +129,7 @@ function clearImage() {
 
 function verdictHTML(r) {
   const color = { AI: "var(--ai)", Real: "var(--human)", Uncertain: "var(--mixed)" }[r.verdict];
-  const sub = { AI: `${r.percent}% likely AI-generated`, Real: `${r.percent}% likely a real photo or artwork`, Uncertain: `${Math.round(100 * r.p)}% AI score — not enough evidence either way` }[r.verdict];
+  const sub = { AI: `${r.percent}% likely AI-generated`, Real: `${r.percent}% likely a real photo or artwork`, Uncertain: `leaning ${r.p >= 0.5 ? "AI" : "real"} (${Math.round(100 * r.p)}% AI score), not enough evidence to decide` }[r.verdict];
   return `<div class="v" style="color:${color}">${r.verdict}</div><div class="s">${sub}</div>`;
 }
 
@@ -140,7 +140,8 @@ async function detect() {
   try {
     const t0 = performance.now();
     const base = toBase(current);
-    const { views, n, info } = inferenceViews(base);
+    const native = (base.h !== current.h || base.w !== current.w) ? current : null;   // v6: crops from the original pixels
+    const { views, n, info } = inferenceViews(base, native);
     const out = await runModel(views, n);
     const row = { lg: out.logit[0], lc: out.logit.slice(1, n), h: info.h, w: info.w };
     const p = fusion.prob(row), v = fusion.verdict(p);
