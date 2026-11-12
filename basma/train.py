@@ -22,7 +22,8 @@ from .model import BasmaDetector, detector_loss
 DEFAULTS = {"backbone": "facebook/dinov2-with-registers-base", "freeze_blocks": 4, "batch_size": 32, "n_crops": 1, "epochs": 2,
             "lr_backbone": 3e-5, "lr_head": 5e-4, "layer_decay": 0.85, "weight_decay": 0.05, "warmup_steps": 300, "max_hours": 3.5,
             "eval_every": 1000, "fp16": True, "workers": 4, "data_dirs": ["data/mini"], "img_root": "data/img", "out": "runs/mini",
-            "limit": 0, "seed": 0, "val_limit": 1500, "eval_conditions": ["clean", "social", "screenshot"], "grad_clip": 1.0, "quantile": 0.25}
+            "limit": 0, "seed": 0, "val_limit": 1500, "eval_conditions": ["clean", "social", "screenshot"], "grad_clip": 1.0, "quantile": 0.25,
+            "resume": ""}   # a run dir whose last/ holds model.pt + opt.pt: training continues from that step (chained Kaggle runs)
 
 
 def log_json(path, obj):
@@ -107,10 +108,14 @@ def main():
 
     best, step, stop = -1.0, 0, False
     ckpt_dir = os.path.join(out, "best")
-    for epoch in range(cfg["epochs"]):
+    if cfg["resume"]:
+        best, step = resume(cfg["resume"], model, opt, scaler, ckpt_dir)
+        log_json(os.path.join(out, "train.log"), {"event": "resumed", "from": cfg["resume"], "step": step, "best": best})
+    for epoch in range(step // steps_per_epoch, cfg["epochs"]):
         ds.epoch = epoch
-        sampler = WeightedRandomSampler(torch.as_tensor(weights), num_samples=steps_per_epoch * cfg["batch_size"], replacement=True,
-                                        generator=torch.Generator().manual_seed(cfg["seed"] * 100 + epoch))
+        n_samples = (steps_per_epoch - step % steps_per_epoch) * cfg["batch_size"]     # the rest of a resumed epoch
+        sampler = WeightedRandomSampler(torch.as_tensor(weights), num_samples=n_samples, replacement=True,
+                                        generator=torch.Generator().manual_seed(cfg["seed"] * 100 + epoch + step))
         dl = DataLoader(ds, batch_size=cfg["batch_size"], sampler=sampler, num_workers=cfg["workers"], collate_fn=collate_train,
                         drop_last=True, persistent_workers=cfg["workers"] > 0, prefetch_factor=4 if cfg["workers"] > 0 else None)
         run_loss, run_main, n_run, t_ep = 0.0, 0.0, 0, time.time()
@@ -148,14 +153,28 @@ def main():
                 log_json(os.path.join(out, "train.log"), {"event": "max-hours reached", "step": step}); stop = True; break
         if stop:
             break
-    save(model, cfg, os.path.join(out, "last"), {"step": step})
-    log_json(os.path.join(out, "train.log"), {"event": "done", "best": best, "hours": (time.time() - t0) / 3600})
+    save(model, cfg, os.path.join(out, "last"), {"step": step, "best": best, "finished": step >= total_steps})
+    torch.save({"opt": opt.state_dict(), "scaler": scaler.state_dict(), "step": step, "best": best}, os.path.join(out, "last", "opt.pt"))
+    log_json(os.path.join(out, "train.log"), {"event": "done", "best": best, "step": step, "total_steps": total_steps, "hours": (time.time() - t0) / 3600})
 
 
 def save(model, cfg, d, info):
     os.makedirs(d, exist_ok=True)
     torch.save({"state_dict": model.state_dict(), "backbone": model.backbone_name, "quantile": model.quantile, "config": cfg, "info": info}, os.path.join(d, "model.pt"))
     json.dump(info, open(os.path.join(d, "info.json"), "w"), indent=1)
+
+
+def resume(run_dir, model, opt, scaler, best_dir):
+    """Continue a time-capped run: weights + optimizer + scaler + step from <run_dir>/last; its best/ is carried over so
+    a later evaluation only replaces it when it is better."""
+    import shutil
+    ck = torch.load(os.path.join(run_dir, "last", "model.pt"), map_location="cpu", weights_only=False)
+    model.load_state_dict(ck["state_dict"])
+    st = torch.load(os.path.join(run_dir, "last", "opt.pt"), map_location="cpu", weights_only=False)
+    opt.load_state_dict(st["opt"]); scaler.load_state_dict(st["scaler"])
+    if os.path.isdir(os.path.join(run_dir, "best")) and not os.path.isdir(best_dir):
+        shutil.copytree(os.path.join(run_dir, "best"), best_dir)
+    return float(st["best"]), int(st["step"])
 
 
 def load_model(path, device="cpu"):

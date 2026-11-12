@@ -13,7 +13,7 @@ import torch
 from PIL import Image, ImageFile
 from torch.utils.data import Dataset
 
-from .attacks import TRAIN_BUCKETS, attack_eval, attack_train
+from .attacks import BUCKET_FN, TRAIN_BUCKETS, attack_eval, attack_train
 from .resample import to_base
 from .views import inference_views, pil_to_tensor, train_views
 
@@ -30,10 +30,24 @@ def load_exclude():
     return ids
 
 
+def load_native_index(dirs):
+    """v6: id -> row of native_*.jsonl (an untouched window of the image's original pixels, member <id>.n.jpg)."""
+    idx = {}
+    for d in dirs:
+        for f in sorted(os.listdir(d)):
+            if f.startswith("native_") and f.endswith(".jsonl"):
+                with open(os.path.join(d, f), encoding="utf-8") as fh:
+                    for line in fh:
+                        if line.strip():
+                            r = json.loads(line); idx[r["id"]] = r
+    return idx
+
+
 def load_manifests(dirs, exclude=True):
     """All manifest_*.jsonl rows from the given directories (each row gets 'dir'). With exclude, training-side rows (never
-    test rows) listed by the leak guard (BASMA_EXCLUDE) are dropped."""
+    test rows) listed by the leak guard (BASMA_EXCLUDE) are dropped. Rows with a native-pixel window get 'native'."""
     excl = load_exclude() if exclude else set()
+    native = load_native_index(dirs)
     rows = []
     for d in dirs:
         for f in sorted(os.listdir(d)):
@@ -50,8 +64,12 @@ def load_manifests(dirs, exclude=True):
         if r["id"] in excl and not r["split"].startswith("eval:"):
             dropped += 1; continue
         seen.add(r["id"]); out.append(r)
+        if r["id"] in native:
+            r["native"] = native[r["id"]]["member"]
     if excl:
         print(f"leak guard: {dropped} training-side rows excluded ({len(excl)} ids listed)", flush=True)
+    if native:
+        print(f"native windows: {sum(1 for r in out if 'native' in r)} of {len(out)} rows have original-pixel windows", flush=True)
     return out
 
 
@@ -102,9 +120,10 @@ def extract_all(dirs, img_root, log=print):
     log(f"extracted {n} new shards into {img_root}")
 
 
-def open_image(row, img_root):
-    """PIL image of a manifest row: the extracted file, or its bytes read from the tar shard when shards are indexed."""
-    rel = row["member"] if "member" in row else row["id"] + ".jpg"
+def open_image(row, img_root, member=None):
+    """PIL image of a manifest row (or of the given member, e.g. its native window): the extracted file, or its bytes
+    read from the tar shard when shards are indexed."""
+    rel = member or (row["member"] if "member" in row else row["id"] + ".jpg")
     idx = _TAR_INDEX.get(img_root)
     if idx is None:                              # another process (score, baselines, DataLoader worker after spawn)
         idx_f = os.path.join(img_root, ".tarindex.pkl")
@@ -156,7 +175,13 @@ class TrainDataset(Dataset):
         except Exception:  # noqa: BLE001
             img = Image.new("RGB", (256, 256), (128, 128, 128))
         img, bucket = attack_train(img, rng, self.buckets)
-        views = train_views(img, rng, self.n_crops)
+        native = None
+        if r.get("native"):                      # v6: texture crops come from the untouched original pixels, same edit bucket
+            try:
+                native = BUCKET_FN[bucket](open_image(r, self.img_root, r["native"]).convert("RGB"), rng)
+            except Exception:  # noqa: BLE001
+                native = None
+        views = train_views(img, rng, self.n_crops, native=native)
         x = torch.from_numpy(np.stack([pil_to_tensor(v) for v in views]))
         return x, torch.tensor(float(r["label"])), BUCKET_IDS[bucket], i
 
@@ -184,9 +209,16 @@ class EvalDataset(Dataset):
             img = open_image(r, self.img_root).convert("RGB")
         except Exception:  # noqa: BLE001
             img = Image.new("RGB", (256, 256), (128, 128, 128))
-        img = attack_eval(img, self.cond, eval_seed(r["id"], self.cond))
+        seed = eval_seed(r["id"], self.cond)
+        img = attack_eval(img, self.cond, seed)
         base = to_base(np.asarray(img))
-        views, info = inference_views(base)
+        native = None
+        if r.get("native"):                      # v6: crops from the original-pixel window under the same condition
+            try:
+                native = np.asarray(attack_eval(open_image(r, self.img_root, r["native"]).convert("RGB"), self.cond, seed))
+            except Exception:  # noqa: BLE001
+                native = None
+        views, info = inference_views(base, native)
         x = torch.zeros(MAX_VIEWS, 3, views.shape[2], views.shape[3])
         x[:views.shape[0]] = torch.from_numpy(views)
         return x, views.shape[0], i, info["h"], info["w"]
@@ -198,6 +230,8 @@ def collate_eval(batch):
 
 
 def image_views(img):
-    """PIL image -> (views float32 (V,3,224,224), info); the single-image inference entry point."""
-    base = to_base(np.asarray(img.convert("RGB")))
-    return inference_views(base)
+    """PIL image -> (views float32 (V,3,224,224), info); the single-image inference entry point. The global view
+    comes from the 512-px base, the texture crops from the image's own pixels (v6: never resized)."""
+    arr = np.asarray(img.convert("RGB"))
+    base = to_base(arr)
+    return inference_views(base, arr if arr.shape != base.shape else None)

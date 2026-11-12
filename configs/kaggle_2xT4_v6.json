@@ -1,0 +1,28 @@
+{
+ "backbone": "facebook/dinov2-with-registers-base",
+ "freeze_blocks": 4,
+ "batch_size": 48,
+ "n_crops": 1,
+ "epochs": 3,
+ "lr_backbone": 3e-05,
+ "lr_head": 0.0005,
+ "layer_decay": 0.85,
+ "weight_decay": 0.05,
+ "warmup_steps": 300,
+ "max_hours": 8.3,
+ "eval_every": 2000,
+ "fp16": true,
+ "workers": 4,
+ "val_limit": 1500,
+ "eval_conditions": [
+  "clean",
+  "social",
+  "screenshot"
+ ],
+ "data_dirs": [
+  "(set by the notebook)"
+ ],
+ "img_root": "/tmp/basma_img",
+ "out": "runs/kaggle_v6",
+ "resume": ""
+}
