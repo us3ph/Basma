@@ -12,7 +12,7 @@
  "max_hours": 8.3,
  "eval_every": 2000,
  "fp16": true,
- "workers": 4,
+ "workers": 6,
  "val_limit": 1500,
  "eval_conditions": [
   "clean",

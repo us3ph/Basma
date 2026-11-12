@@ -93,42 +93,48 @@ def _shards(dirs):
 
 
 def extract_all(dirs, img_root, log=print):
-    """Make every image readable from img_root. When the disk has room, extract the shards into img_root/<id>.jpg (skips
-    shards already extracted); otherwise index them and read each image straight from its shard (no extra disk).
-    BASMA_IMG_MODE=extract|index forces one."""
+    """Make every image readable from img_root. Shards are unpacked into img_root/<id>.jpg up to a disk budget
+    (BASMA_EXTRACT_GB, default 48: Kaggle's session disk is ~73 GB), in the order the dirs are given; the remaining
+    shards are indexed and their images read straight from the tar files (no extra disk). BASMA_IMG_MODE=extract|index
+    forces everything one way. Re-runs skip shards already unpacked."""
     os.makedirs(img_root, exist_ok=True)
     shards = _shards(dirs)
     done_f, idx_f = os.path.join(img_root, ".extracted"), os.path.join(img_root, ".tarindex.pkl")
     done = set(open(done_f).read().split()) if os.path.exists(done_f) else set()
-    todo = [p for p in shards if os.path.basename(p) not in done]
     mode = os.environ.get("BASMA_IMG_MODE", "auto")
-    if mode == "auto":
-        need, free = sum(os.path.getsize(p) for p in todo) * 1.05 + 8e9, shutil.disk_usage(img_root).free
-        mode = "extract" if not todo or free > need else "index"
-        log(f"images: {len(todo)} of {len(shards)} shards to unpack need {need / 1e9:.0f} GB, {free / 1e9:.0f} GB free -> {mode}")
-    if mode == "index":
-        idx = {}
-        for path in shards:
-            with tarfile.open(path) as t:
-                for ti in t:
-                    if ti.isfile():
-                        idx[ti.name] = (path, ti.offset_data, ti.size)
-        with open(idx_f, "wb") as fh:
-            pickle.dump(idx, fh, protocol=pickle.HIGHEST_PROTOCOL)
-        _TAR_INDEX[img_root] = idx
-        log(f"indexed {len(idx)} images in {len(shards)} shards (read in place)")
-        return
-    if os.path.exists(idx_f):
-        os.remove(idx_f)
-    _TAR_INDEX[img_root] = {}
+    budget = float(os.environ.get("BASMA_EXTRACT_GB", "48")) * 1e9
+    free = shutil.disk_usage(img_root).free
+    extract, index = [], []
+    used = sum(os.path.getsize(p) for p in shards if os.path.basename(p) in done)
+    for p in shards:
+        if os.path.basename(p) in done:
+            continue
+        size = os.path.getsize(p) * 1.05
+        if mode == "extract" or (mode == "auto" and used + size <= budget and used + size + 8e9 <= free):
+            extract.append(p); used += size
+        else:
+            index.append(p)
+    log(f"images: {len(shards)} shards; unpacking {len(extract)} ({used / 1e9:.0f} GB incl. earlier), reading {len(index)} in place "
+        f"(budget {budget / 1e9:.0f} GB, {free / 1e9:.0f} GB free, mode {mode})")
     n = 0
-    for path in todo:
+    for path in extract:
         with tarfile.open(path) as t:
             t.extractall(img_root, filter="data") if hasattr(tarfile, "data_filter") else t.extractall(img_root)
         done.add(os.path.basename(path)); n += 1
         with open(done_f, "w") as fh:
             fh.write("\n".join(sorted(done)))
-    log(f"extracted {n} new shards into {img_root}")
+        if n % 100 == 0:
+            log(f"  unpacked {n}/{len(extract)} shards")
+    idx = {}
+    for path in index:
+        with tarfile.open(path) as t:
+            for ti in t:
+                if ti.isfile():
+                    idx[ti.name] = (path, ti.offset_data, ti.size)
+    with open(idx_f, "wb") as fh:
+        pickle.dump(idx, fh, protocol=pickle.HIGHEST_PROTOCOL)
+    _TAR_INDEX[img_root] = idx
+    log(f"extracted {n} new shards into {img_root}; {len(idx)} images indexed in {len(index)} shards (read in place)")
 
 
 def open_image(row, img_root, member=None):
