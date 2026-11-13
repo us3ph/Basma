@@ -119,7 +119,7 @@ def train_views(img, rng, n_crops=1, native=None):
     w, h = src.size
     if min(w, h) < VIEW:
         th, tw = fit_min_side(h, w, VIEW)
-        src = img.resize((tw, th), Image.BICUBIC); w, h = tw, th
+        src = src.resize((tw, th), Image.BICUBIC); w, h = tw, th
     if rng.random() < 0.7 and (w > VIEW or h > VIEW):
         base = np.asarray(src)
         x = base.astype(np.float64)

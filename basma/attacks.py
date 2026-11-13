@@ -95,7 +95,7 @@ def crop_frac(img, area_frac, rng):
     ratio = float(np.exp(rng.uniform(np.log(0.7), np.log(1.4))))
     cw = int(round(min(w, np.sqrt(w * h * area_frac * ratio))))
     ch = int(round(min(h, w * h * area_frac / max(1, cw))))
-    cw, ch = max(32, min(w, cw)), max(32, min(h, ch))
+    cw, ch = min(w, max(32, cw)), min(h, max(32, ch))      # never larger than the image (tiny images after other edits)
     x0, y0 = int(rng.integers(0, w - cw + 1)), int(rng.integers(0, h - ch + 1))
     return img.crop((x0, y0, x0 + cw, y0 + ch))
 
