@@ -16,6 +16,7 @@ Our own fixed test, scored for every version. No version ever trains on these im
 | **v3** | 2026-11-07 | 79.0 % / 97.5 % | 75.8 % / 97.0 % | 75.1 % / 79.8 % | 48.5 % / 72.3 % |
 | **v4** | 2026-11-08 | 89.4 % / 95.9 % | 86.2 % / 94.1 % | 82.9 % / 75.7 % | 56.6 % / 62.3 % |
 | **v5** | 2026-11-10 | 89.6 % / 85.3 % | 85.7 % / 80.3 % | 91.5 % / 56.7 % | 63.9 % / 49.0 % |
+| **v6** | 2026-11-13 | 92.1 % / 88.9 % | 88.9 % / 83.2 % | 92.0 % / 61.5 % | 67.4 % / 41.7 % |
 
 ## Mistakes: AI called Real / Real called AI
 
@@ -26,6 +27,7 @@ Our own fixed test, scored for every version. No version ever trains on these im
 | v3 | 14.3 % / 0.7 % | 15.7 % / 0.8 % | 12.3 % / 8.0 % | 34.6 % / 16.7 % |
 | v4 | 4.4 % / 0.9 % | 5.8 % / 1.4 % | 5.4 % / 8.7 % | 25.2 % / 22.7 % |
 | v5 | 2.3 % / 1.2 % | 3.0 % / 1.6 % | 0.9 % / 8.2 % | 10.8 % / 22.3 % |
+| v6 | 2.6 % / 1.8 % | 3.4 % / 2.6 % | 1.1 % / 10.7 % | 12.6 % / 30.7 % |
 
 ## AUROC
 
@@ -36,34 +38,35 @@ Our own fixed test, scored for every version. No version ever trains on these im
 | v3 | 0.960 | 0.959 | 0.926 | 0.753 |
 | v4 | 0.990 | 0.985 | 0.953 | 0.749 |
 | v5 | 0.987 | 0.979 | 0.975 | 0.783 |
+| v6 | 0.988 | 0.979 | 0.972 | 0.733 |
 
 ## Held-out pools (original / after edits)
 
 AI pools show *AI detected*, real-photo pools *Human detected*; mixed pools show both as AI / Human.
 
-| Pool | v1 | v2 | v3 | v4 | v5 |
-|---|---|---|---|---|---|
-| Unseen commercial generators (Seedream, Reve, Grok, Qwen, …) | 97.0 % → 96.6 % | 95.0 % → 93.4 % | 94.0 % → 91.7 % | 94.2 % → 91.8 % | 95.5 % → 93.0 % |
-| Community Forensics Eval | 84.9 % / 74.8 % → 84.8 % / 74.8 % | 81.4 % / 92.3 % → 78.2 % / 92.5 % | 75.4 % / 94.4 % → 70.4 % / 93.6 % | 84.2 % / 91.7 % → 80.5 % / 89.0 % | 85.2 % / 77.6 % → 80.8 % / 70.5 % |
-| GenImage (older generators, ImageNet photos) | 61.6 % / 94.7 % → 61.4 % / 92.4 % | 53.2 % / 97.6 % → 51.3 % / 96.6 % | 45.6 % / 98.5 % → 42.1 % / 98.0 % | 81.9 % / 97.5 % → 77.6 % / 95.2 % | 78.2 % / 90.0 % → 71.3 % / 83.6 % |
-| WildRF (Reddit / Facebook / Twitter) | 89.8 % / 83.8 % → 91.2 % / 83.5 % | 87.8 % / 92.8 % → 86.0 % / 93.4 % | 79.3 % / 96.1 % → 77.5 % / 96.0 % | 93.2 % / 94.0 % → 89.9 % / 92.8 % | 93.1 % / 78.6 % → 89.4 % / 76.9 % |
-| Flickr2K photos | 90.7 % → 89.0 % | 97.8 % → 95.9 % | 98.8 % → 98.3 % | 98.2 % → 96.3 % | 92.0 % → 86.8 % |
-| Open Images photos | 93.2 % → 92.6 % | 97.5 % → 96.7 % | 98.8 % → 98.3 % | 97.0 % → 95.8 % | 86.5 % → 80.9 % |
+| Pool | v1 | v2 | v3 | v4 | v5 | v6 |
+|---|---|---|---|---|---|---|
+| Unseen commercial generators (Seedream, Reve, Grok, Qwen, …) | 97.0 % → 96.6 % | 95.0 % → 93.4 % | 94.0 % → 91.7 % | 94.2 % → 91.8 % | 95.5 % → 93.0 % | 96.2 % → 93.5 % |
+| Community Forensics Eval | 84.9 % / 74.8 % → 84.8 % / 74.8 % | 81.4 % / 92.3 % → 78.2 % / 92.5 % | 75.4 % / 94.4 % → 70.4 % / 93.6 % | 84.2 % / 91.7 % → 80.5 % / 89.0 % | 85.2 % / 77.6 % → 80.8 % / 70.5 % | 89.4 % / 81.8 % → 86.4 % / 74.2 % |
+| GenImage (older generators, ImageNet photos) | 61.6 % / 94.7 % → 61.4 % / 92.4 % | 53.2 % / 97.6 % → 51.3 % / 96.6 % | 45.6 % / 98.5 % → 42.1 % / 98.0 % | 81.9 % / 97.5 % → 77.6 % / 95.2 % | 78.2 % / 90.0 % → 71.3 % / 83.6 % | 83.6 % / 94.9 % → 77.1 % / 87.2 % |
+| WildRF (Reddit / Facebook / Twitter) | 89.8 % / 83.8 % → 91.2 % / 83.5 % | 87.8 % / 92.8 % → 86.0 % / 93.4 % | 79.3 % / 96.1 % → 77.5 % / 96.0 % | 93.2 % / 94.0 % → 89.9 % / 92.8 % | 93.1 % / 78.6 % → 89.4 % / 76.9 % | 94.5 % / 83.0 % → 92.3 % / 78.9 % |
+| Flickr2K photos | 90.7 % → 89.0 % | 97.8 % → 95.9 % | 98.8 % → 98.3 % | 98.2 % → 96.3 % | 92.0 % → 86.8 % | 92.7 % → 88.7 % |
+| Open Images photos | 93.2 % → 92.6 % | 97.5 % → 96.7 % | 98.8 % → 98.3 % | 97.0 % → 95.8 % | 86.5 % → 80.9 % | 88.7 % → 84.0 % |
 
 ## Held-out by edit (AI detected / Human detected)
 
-| Edit | v1 | v2 | v3 | v4 | v5 |
-|---|---|---|---|---|---|
-| original | 87.1 % / 88.5 % | 83.7 % / 95.7 % | 79.0 % / 97.5 % | 89.4 % / 95.9 % | 89.6 % / 85.3 % |
-| JPEG 60 | 87.0 % / 88.4 % | 81.9 % / 95.5 % | 77.0 % / 96.9 % | 85.3 % / 95.1 % | 84.5 % / 80.4 % |
-| WebP 50 | 87.2 % / 84.8 % | 81.6 % / 92.9 % | 75.4 % / 95.2 % | 84.7 % / 92.1 % | 83.2 % / 73.6 % |
-| resized to 50 % | 88.0 % / 87.6 % | 83.0 % / 95.3 % | 77.2 % / 97.5 % | 87.3 % / 93.5 % | 86.9 % / 81.6 % |
-| screenshot | 87.4 % / 87.4 % | 80.5 % / 95.3 % | 74.8 % / 97.1 % | 85.5 % / 93.6 % | 85.3 % / 80.3 % |
-| social-media pipeline | 87.7 % / 87.0 % | 80.5 % / 94.5 % | 74.5 % / 96.8 % | 85.0 % / 92.3 % | 84.1 % / 74.6 % |
-| colour edit | 85.0 % / 90.9 % | 79.4 % / 97.1 % | 73.3 % / 98.5 % | 84.9 % / 96.3 % | 85.4 % / 87.0 % |
-| blur / noise | 87.1 % / 85.6 % | 83.3 % / 94.9 % | 75.9 % / 97.6 % | 88.1 % / 95.3 % | 88.8 % / 81.4 % |
-| crop 50 % | 86.9 % / 87.7 % | 82.7 % / 95.7 % | 77.0 % / 97.1 % | 88.2 % / 94.5 % | 88.2 % / 84.7 % |
-| several edits | 87.9 % / 87.3 % | 81.4 % / 95.2 % | 77.0 % / 96.5 % | 86.3 % / 93.9 % | 85.1 % / 79.0 % |
+| Edit | v1 | v2 | v3 | v4 | v5 | v6 |
+|---|---|---|---|---|---|---|
+| original | 87.1 % / 88.5 % | 83.7 % / 95.7 % | 79.0 % / 97.5 % | 89.4 % / 95.9 % | 89.6 % / 85.3 % | 92.1 % / 88.9 % |
+| JPEG 60 | 87.0 % / 88.4 % | 81.9 % / 95.5 % | 77.0 % / 96.9 % | 85.3 % / 95.1 % | 84.5 % / 80.4 % | 88.6 % / 87.1 % |
+| WebP 50 | 87.2 % / 84.8 % | 81.6 % / 92.9 % | 75.4 % / 95.2 % | 84.7 % / 92.1 % | 83.2 % / 73.6 % | 89.2 % / 72.9 % |
+| resized to 50 % | 88.0 % / 87.6 % | 83.0 % / 95.3 % | 77.2 % / 97.5 % | 87.3 % / 93.5 % | 86.9 % / 81.6 % | 88.4 % / 82.1 % |
+| screenshot | 87.4 % / 87.4 % | 80.5 % / 95.3 % | 74.8 % / 97.1 % | 85.5 % / 93.6 % | 85.3 % / 80.3 % | 88.9 % / 81.4 % |
+| social-media pipeline | 87.7 % / 87.0 % | 80.5 % / 94.5 % | 74.5 % / 96.8 % | 85.0 % / 92.3 % | 84.1 % / 74.6 % | 86.2 % / 76.8 % |
+| colour edit | 85.0 % / 90.9 % | 79.4 % / 97.1 % | 73.3 % / 98.5 % | 84.9 % / 96.3 % | 85.4 % / 87.0 % | 89.1 % / 90.5 % |
+| blur / noise | 87.1 % / 85.6 % | 83.3 % / 94.9 % | 75.9 % / 97.6 % | 88.1 % / 95.3 % | 88.8 % / 81.4 % | 90.7 % / 86.0 % |
+| crop 50 % | 86.9 % / 87.7 % | 82.7 % / 95.7 % | 77.0 % / 97.1 % | 88.2 % / 94.5 % | 88.2 % / 84.7 % | 91.2 % / 88.0 % |
+| several edits | 87.9 % / 87.3 % | 81.4 % / 95.2 % | 77.0 % / 96.5 % | 86.3 % / 93.9 % | 85.1 % / 79.0 % | 87.5 % / 83.7 % |
 
 ## Versions
 
@@ -72,3 +75,4 @@ AI pools show *AI detected*, real-photo pools *Human detected*; mixed pools show
 * **v3**: added 66k real photos of new kinds (LSDIR, SUN397, food, fashion, cars, pets, more Pexels / CC3M / WikiArt) and 56k AI images (Community Forensics, 2026 generators, GPT-image-2, StyleGAN2 faces), twice the training steps. Real photos called AI fell to 0.7 % (NTIRE clean 20.7 % -> 8.0 %); at the same false-alarm rate it catches more AI than v2 (held-out, 1 % of reals flagged: 78.8 -> 81.0 % original, 73.5 -> 77.0 % edited), but its shipped threshold is stricter, so fewer AI images are answered AI. Live on the website 2026-11-07 to 2026-11-08
 * **v4**: added about 80k AI images aimed at what v3 missed (Synthbuster+, So-Fake-Set, ADM samples, DALL-E 2 faces, Karlo, OpenFake Civitai and Reddit) plus Reddit real photos; NTIRE and its photo sources are refused by the data builder, and a leak guard removed 242 training images that looked like bench or NTIRE images. AI called Real fell from 14.3 % to 4.4 %; at the same false-alarm rate (1 % of reals flagged) it catches 90.0 % vs 81.0 % (original) and 83.9 % vs 77.0 % (edited), NTIRE clean 64.2 vs 52.6 %. Caveat: ADM, GLIDE, DALL-E 2 and Firefly are now trained generators (other images of them), so those bench rows no longer test unseen generators; generators still unseen improved too (Hourglass 2 -> 28 %, GALIP 49 -> 83 %, DF-GAN 68 -> 98 %). Not better on NTIRE distorted (AUROC 0.749) and more of its real photos are called AI (22.7 % vs 16.7 %). Live on the website 2026-11-08 to 2026-11-10
 * **v5**: added 279k images from OpenFake v2.1 (published 2026-11-05): Civitai and Reddit posts, new text-to-image models, and AI edits of real photos with their untouched originals as real (552k training images, 2 full epochs). AI called Real fell from 4.4 % to 2.3 %; NTIRE AUROC 0.975 clean / 0.783 distorted (v4 0.953 / 0.749), NTIRE clean AI caught at 1 % of reals flagged 64.2 -> 80.3 %. It answers AI for 59 % of held-out AI-edited photos, a kind of image the bench does not contain. Held-out ranking about equal to v4 (1 % of reals flagged: 90.0 -> 88.8 % original). Its Real cut-off is lower (0.231 vs 0.434) because AI edits are in the validation set, so more real photos are answered Uncertain (human detected 95.9 -> 85.3 %); real photos called AI 0.9 -> 1.2 %. Live on the website since 2026-11-10 (with this strict Real cut-off)
+* **v6**: run 1 of a chained training (8.3 h, about half the 3-pass schedule, learning rate not yet annealed) on the same images with an untouched 512-px window of the original pixels per image (texture crops come from it, never resized; label-independent tile jitter against the 'smooth = AI' shortcut). At shipped thresholds AI detected rose to 92.1 % (v5 89.6) and fewer real photos are Uncertain, but more are called AI (1.8 % vs 1.2 %); ranking equal to v5 on the held-out bench (1 % of reals flagged: 88.8 -> 89.2 %) and lower on NTIRE (clean 80.3 -> 70.0 % at 1 %, distorted AUROC 0.733). Not live; run 2 finishes the schedule
