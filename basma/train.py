@@ -149,12 +149,12 @@ def main():
                     best = score
                     save(model, cfg, ckpt_dir, {"step": step, "score": score, "val": res})
                     log_json(os.path.join(out, "train.log"), {"event": "saved best", "step": step, "score": score})
+                save_last(model, opt, scaler, cfg, out, step, best, step >= total_steps)
             if hit_time:
                 log_json(os.path.join(out, "train.log"), {"event": "max-hours reached", "step": step}); stop = True; break
         if stop:
             break
-    save(model, cfg, os.path.join(out, "last"), {"step": step, "best": best, "finished": step >= total_steps})
-    torch.save({"opt": opt.state_dict(), "scaler": scaler.state_dict(), "step": step, "best": best}, os.path.join(out, "last", "opt.pt"))
+    save_last(model, opt, scaler, cfg, out, step, best, step >= total_steps)
     log_json(os.path.join(out, "train.log"), {"event": "done", "best": best, "step": step, "total_steps": total_steps, "hours": (time.time() - t0) / 3600})
 
 
@@ -162,6 +162,16 @@ def save(model, cfg, d, info):
     os.makedirs(d, exist_ok=True)
     torch.save({"state_dict": model.state_dict(), "backbone": model.backbone_name, "quantile": model.quantile, "config": cfg, "info": info}, os.path.join(d, "model.pt"))
     json.dump(info, open(os.path.join(d, "info.json"), "w"), indent=1)
+
+
+def save_last(model, opt, scaler, cfg, out, step, best, finished):
+    """Resumable state: weights, optimizer, scaler, step (written to a temp dir first, then swapped in)."""
+    import shutil
+    tmp, d = os.path.join(out, "last.tmp"), os.path.join(out, "last")
+    shutil.rmtree(tmp, ignore_errors=True)
+    save(model, cfg, tmp, {"step": step, "best": best, "finished": finished})
+    torch.save({"opt": opt.state_dict(), "scaler": scaler.state_dict(), "step": step, "best": best}, os.path.join(tmp, "opt.pt"))
+    shutil.rmtree(d, ignore_errors=True); os.rename(tmp, d)
 
 
 def resume(run_dir, model, opt, scaler, best_dir):

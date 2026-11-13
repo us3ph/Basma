@@ -85,6 +85,7 @@ def load_manifests(dirs, exclude=True):
 
 
 _TAR_INDEX = {}      # img_root -> {member: (shard path, byte offset, size)} when shards are read in place
+_TAR_FILES = {}      # shard path -> open file handle (per process)
 
 
 def _shards(dirs):
@@ -149,9 +150,14 @@ def open_image(row, img_root, member=None):
     if hit is None:
         return Image.open(os.path.join(img_root, rel))
     path, off, size = hit
-    with open(path, "rb") as fh:
-        fh.seek(off)
-        return Image.open(io.BytesIO(fh.read(size)))
+    fh = _TAR_FILES.get(path)
+    if fh is None:
+        if len(_TAR_FILES) > 512:
+            for f in _TAR_FILES.values(): f.close()
+            _TAR_FILES.clear()
+        fh = _TAR_FILES[path] = open(path, "rb", buffering=0)
+    fh.seek(off)
+    return Image.open(io.BytesIO(fh.read(size)))
 
 
 def path_of(row, img_root):
